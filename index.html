@@ -5,380 +5,329 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HeyKay Stock Market Challenge</title>
   <style>
-    /* ===== RESET & VARIABLES ===== */
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
     :root {
-      --bg:       #070d1a;
-      --bg-card:  rgba(6, 16, 38, 0.95);
-      --cyan:     #00d4ff;
-      --gold:     #ffd700;
-      --green:    #00ff88;
-      --red:      #ff3838;
-      --text:     #c8d8e8;
-      --border:   rgba(0, 212, 255, 0.22);
-      --border-w: rgba(255, 215, 0, 0.5);
-      --shadow-g: rgba(0, 255, 136, 0.35);
-      --shadow-r: rgba(255, 56, 56, 0.35);
-      --shadow-w: rgba(255, 215, 0, 0.3);
+      --bg:      #070d1a;
+      --bg-card: rgba(6,16,38,0.95);
+      --cyan:    #00d4ff;
+      --gold:    #ffd700;
+      --green:   #00ff88;
+      --red:     #ff3838;
+      --text:    #c8d8e8;
+      --border:  rgba(0,212,255,0.22);
+      --sg:      rgba(0,255,136,0.35);
+      --sr:      rgba(255,56,56,0.35);
+      --sw:      rgba(255,215,0,0.3);
     }
 
-    /* ===== BODY + CIRCUIT BACKGROUND ===== */
+    /* ── body ─────────────────────────────────────────────── */
     body {
       font-family: 'Courier New', 'Lucida Console', monospace;
-      background-color: var(--bg);
+      background: var(--bg);
       color: var(--text);
-      min-height: 100vh;
-      height: 100vh;
+      width: 100vw; height: 100vh;
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
       position: relative;
     }
 
     /* Grid lines */
     body::before {
-      content: '';
-      position: fixed; inset: 0;
+      content:''; position:fixed; inset:0;
       background-image:
         linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
       background-size: 48px 48px;
-      pointer-events: none;
-      z-index: 0;
+      pointer-events:none; z-index:0;
     }
 
-    /* Circuit traces (SVG overlay) */
+    /* Circuit SVG */
     .circuit-overlay {
-      position: fixed; inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.18;
+      position:fixed; inset:0;
+      pointer-events:none; z-index:0; opacity:0.15;
     }
 
-    /* Scan line animation */
+    /* Scan line */
     .scan-line {
-      position: fixed; left: 0; right: 0; height: 2px; top: 0;
-      background: linear-gradient(90deg, transparent, var(--cyan) 30%, var(--cyan) 70%, transparent);
-      animation: scanDown 6s linear infinite;
-      opacity: 0.25;
-      pointer-events: none;
-      z-index: 200;
+      position:fixed; left:0; right:0; height:2px; top:0;
+      background:linear-gradient(90deg,transparent,var(--cyan) 30%,var(--cyan) 70%,transparent);
+      animation:scanDown 6s linear infinite;
+      opacity:0.2; pointer-events:none; z-index:200;
     }
     @keyframes scanDown { 0%{top:-2px} 100%{top:100vh} }
 
-    /* ===== MAIN CONTAINER ===== */
+    /* ── main wrapper ─────────────────────────────────────── */
+    /* All rows stacked; cards get the leftover space */
     .wrap {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      padding: 12px 18px 10px;
-      gap: 6px;
+      position:relative; z-index:1;
+      display:flex; flex-direction:column;
+      height:100vh;
+      padding: 8px 14px 7px;
+      gap: 5px;
     }
 
-    /* ===== HEADER ===== */
-    .header {
-      text-align: center;
-      position: relative;
-      padding: 2px 0 4px;
-    }
-    .header h1 {
-      font-size: clamp(1.4rem, 3vw, 2.3rem);
-      font-weight: 900;
-      color: var(--gold);
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      text-shadow:
-        0 0 18px rgba(255,215,0,0.7),
-        0 0 40px rgba(255,215,0,0.35),
-        0 0 70px rgba(255,215,0,0.15);
-    }
-    .header .sub {
-      font-size: 0.62rem;
-      letter-spacing: 5px;
-      color: var(--cyan);
-      margin-top: 2px;
-      opacity: 0.8;
-    }
-
-    /* ===== LEADERBOARD (top-right corner) ===== */
-    .leaderboard {
-      position: absolute;
-      top: 10px;
-      right: 18px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 14px;
-      min-width: 165px;
-      backdrop-filter: blur(4px);
-    }
-    .lb-title {
-      color: var(--gold);
-      font-size: 0.62rem;
-      letter-spacing: 3px;
-      text-align: center;
-      border-bottom: 1px solid rgba(255,215,0,0.2);
-      padding-bottom: 6px;
-      margin-bottom: 7px;
-    }
-    .lb-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 3px 0;
-      font-size: 0.82rem;
-    }
-    .lb-name { color: var(--cyan); letter-spacing: 1px; }
-    .lb-score {
-      font-size: 1.1rem;
-      font-weight: bold;
-      color: var(--green);
-      text-shadow: 0 0 8px var(--shadow-g);
-      min-width: 28px;
-      text-align: right;
-    }
-    .lb-leader {
-      text-align: center;
-      font-size: 0.62rem;
-      margin-top: 7px;
-      padding-top: 5px;
-      border-top: 1px solid var(--border);
-      color: var(--gold);
-      letter-spacing: 1px;
-    }
-
-    /* ===== COUNTDOWN ===== */
-    .countdown-wrap {
-      text-align: center;
-    }
-    .countdown-label {
-      font-size: 0.6rem;
-      letter-spacing: 4px;
-      color: var(--cyan);
-      text-transform: uppercase;
-      opacity: 0.85;
-    }
-    .countdown-timer {
-      font-size: clamp(1.4rem, 3vw, 2rem);
-      font-weight: 900;
-      letter-spacing: 3px;
-      font-variant-numeric: tabular-nums;
-      color: var(--gold);
-      text-shadow: 0 0 18px var(--shadow-w);
-      line-height: 1.1;
-    }
-    .countdown-timer.urgent { color: var(--red); text-shadow: 0 0 18px var(--shadow-r); }
-    .countdown-timer.closed { color: #ff8844; text-shadow: none; font-size: 1rem; }
-
-    /* ===== PLAYER SECTION ===== */
-    .players-row {
-      display: flex;
-      gap: 14px;
-      flex: 1;
-      align-items: stretch;
-      min-height: 0;
-    }
-
-    .vs-badge {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: clamp(1.2rem, 2.5vw, 1.8rem);
-      font-weight: 900;
-      color: var(--gold);
-      text-shadow: 0 0 20px var(--shadow-w);
-      min-width: 38px;
+    /* ── top bar: title + leaderboard side-by-side ────────── */
+    .top-bar {
+      display:flex;
+      align-items:center;
+      gap: 10px;
       flex-shrink: 0;
     }
 
-    /* ===== PLAYER CARD ===== */
+    /* Title block (centered, grows) */
+    .title-block {
+      flex:1;
+      text-align:center;
+    }
+    .title-block h1 {
+      font-size: clamp(1rem, 2.6vw, 2.1rem);
+      font-weight:900;
+      color:var(--gold);
+      letter-spacing:4px;
+      text-transform:uppercase;
+      white-space:nowrap;
+      text-shadow: 0 0 16px rgba(255,215,0,0.7), 0 0 38px rgba(255,215,0,0.3);
+    }
+    .title-block .sub {
+      font-size:0.55rem;
+      letter-spacing:5px;
+      color:var(--cyan);
+      opacity:0.8;
+      margin-top:1px;
+    }
+
+    /* Leaderboard (right side of top bar) */
+    .leaderboard {
+      flex-shrink:0;
+      background:var(--bg-card);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:7px 12px;
+      min-width:150px;
+    }
+    .lb-title {
+      color:var(--gold);
+      font-size:0.58rem;
+      letter-spacing:3px;
+      text-align:center;
+      border-bottom:1px solid rgba(255,215,0,0.2);
+      padding-bottom:4px;
+      margin-bottom:5px;
+    }
+    .lb-row {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin:2px 0;
+      font-size:0.78rem;
+    }
+    .lb-name  { color:var(--cyan); letter-spacing:1px; }
+    .lb-score {
+      font-size:1rem; font-weight:bold;
+      color:var(--green);
+      text-shadow:0 0 8px var(--sg);
+      min-width:24px; text-align:right;
+    }
+    .lb-leader {
+      text-align:center;
+      font-size:0.58rem;
+      margin-top:5px; padding-top:4px;
+      border-top:1px solid var(--border);
+      color:var(--gold); letter-spacing:1px;
+    }
+
+    /* Spacer (left side balances title centering) */
+    .top-spacer { flex:0 0 150px; }   /* same width as leaderboard */
+
+    /* ── countdown ────────────────────────────────────────── */
+    .countdown-wrap {
+      text-align:center;
+      flex-shrink:0;
+      line-height:1.15;
+    }
+    .countdown-label {
+      font-size:0.55rem;
+      letter-spacing:4px;
+      color:var(--cyan);
+      opacity:0.85;
+    }
+    .countdown-timer {
+      font-size: clamp(1.1rem, 2.8vh, 1.8rem);
+      font-weight:900;
+      letter-spacing:3px;
+      font-variant-numeric:tabular-nums;
+      color:var(--gold);
+      text-shadow:0 0 16px var(--sw);
+    }
+    .countdown-timer.urgent { color:var(--red); text-shadow:0 0 16px var(--sr); }
+    .countdown-timer.closed { color:#ff8844; text-shadow:none; font-size:clamp(0.9rem,1.8vh,1.3rem); }
+
+    /* ── players row ──────────────────────────────────────── */
+    .players-row {
+      display:flex;
+      gap:12px;
+      flex:1;          /* fills remaining height */
+      min-height:0;    /* crucial — lets flexbox shrink */
+      align-items:stretch;
+    }
+
+    .vs-badge {
+      display:flex; align-items:center; justify-content:center;
+      font-size: clamp(1rem, 2vw, 1.6rem);
+      font-weight:900;
+      color:var(--gold);
+      text-shadow:0 0 20px var(--sw);
+      flex-shrink:0; width:36px;
+    }
+
+    /* ── player card ──────────────────────────────────────── */
     .card {
-      flex: 1;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      position: relative;
-      transition: border-color 0.5s, box-shadow 0.5s;
-      overflow: hidden;
+      flex:1;
+      background:var(--bg-card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:12px 16px;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      text-align:center;
+      position:relative;
+      overflow:hidden;
+      transition:border-color .5s, box-shadow .5s, opacity .5s;
+      min-height:0;
     }
     /* Corner brackets */
     .card::before {
-      content: '';
-      position: absolute; top: -1px; left: -1px;
-      width: 22px; height: 22px;
-      border-top: 2px solid var(--cyan);
-      border-left: 2px solid var(--cyan);
-      border-radius: 4px 0 0 0;
+      content:''; position:absolute; top:-1px; left:-1px;
+      width:20px; height:20px;
+      border-top:2px solid var(--cyan); border-left:2px solid var(--cyan);
+      border-radius:4px 0 0 0;
     }
     .card::after {
-      content: '';
-      position: absolute; bottom: -1px; right: -1px;
-      width: 22px; height: 22px;
-      border-bottom: 2px solid var(--cyan);
-      border-right: 2px solid var(--cyan);
-      border-radius: 0 0 4px 0;
+      content:''; position:absolute; bottom:-1px; right:-1px;
+      width:20px; height:20px;
+      border-bottom:2px solid var(--cyan); border-right:2px solid var(--cyan);
+      border-radius:0 0 4px 0;
     }
     .card.winning {
-      border-color: var(--gold);
-      box-shadow: 0 0 35px rgba(255,215,0,0.18), inset 0 0 35px rgba(255,215,0,0.05);
+      border-color:var(--gold);
+      box-shadow:0 0 30px rgba(255,215,0,0.18), inset 0 0 30px rgba(255,215,0,0.05);
     }
-    .card.winning::before, .card.winning::after { border-color: var(--gold); }
-    .card.losing {
-      border-color: rgba(255,56,56,0.25);
-      opacity: 0.82;
-    }
+    .card.winning::before, .card.winning::after { border-color:var(--gold); }
+    .card.losing { border-color:rgba(255,56,56,0.2); opacity:.8; }
 
-    /* Card internal elements */
+    /* Status badge (top-left of card) */
     .card-status {
-      position: absolute;
-      top: 10px; left: 12px;
-      font-size: 0.58rem;
-      padding: 2px 8px;
-      border-radius: 3px;
-      border: 1px solid;
-      letter-spacing: 1px;
+      position:absolute; top:8px; left:10px;
+      font-size:0.52rem; padding:2px 7px;
+      border-radius:3px; border:1px solid;
+      letter-spacing:1px;
     }
-    .status-open   { color: var(--green); border-color: var(--green); }
-    .status-closed { color: #ff8844;      border-color: #ff8844; }
-    .status-pre    { color: var(--cyan);  border-color: var(--cyan); }
+    .status-open   { color:var(--green); border-color:var(--green); }
+    .status-closed { color:#ff8844;      border-color:#ff8844; }
+    .status-pre    { color:var(--cyan);  border-color:var(--cyan); }
 
+    /* Crown badge (top-right of card) */
     .win-crown {
-      position: absolute;
-      top: 8px; right: 10px;
-      font-size: 0.6rem;
-      font-weight: bold;
-      background: var(--gold);
-      color: #000;
-      padding: 3px 8px;
-      border-radius: 3px;
-      letter-spacing: 1px;
+      position:absolute; top:8px; right:8px;
+      font-size:0.55rem; font-weight:bold;
+      background:var(--gold); color:#000;
+      padding:2px 7px; border-radius:3px; letter-spacing:1px;
     }
 
+    /* Card content — all sizes scale with viewport height */
     .p-name {
-      font-size: clamp(0.9rem, 1.8vw, 1.25rem);
-      font-weight: bold;
-      color: var(--cyan);
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      margin-bottom: 6px;
+      font-size: clamp(0.8rem, 1.8vh, 1.2rem);
+      font-weight:bold; color:var(--cyan);
+      letter-spacing:4px; text-transform:uppercase;
+      margin-bottom:3px;
     }
     .ticker-label {
-      font-size: 0.58rem;
-      letter-spacing: 3px;
-      color: rgba(200,216,232,0.45);
-      text-transform: uppercase;
+      font-size:0.52rem; letter-spacing:3px;
+      color:rgba(200,216,232,0.4); text-transform:uppercase;
     }
     .ticker-sym {
-      font-size: clamp(1.8rem, 4vw, 3rem);
-      font-weight: 900;
-      color: #fff;
-      letter-spacing: 3px;
-      margin: 2px 0;
-      text-shadow: 0 0 20px rgba(255,255,255,0.15);
+      font-size: clamp(1.4rem, 4vh, 2.8rem);
+      font-weight:900; color:#fff;
+      letter-spacing:3px; margin:1px 0;
+      text-shadow:0 0 18px rgba(255,255,255,0.12);
     }
     .arrow-icon {
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      line-height: 1;
-      margin: 4px 0 2px;
+      font-size: clamp(1.8rem, 5vh, 3.2rem);
+      line-height:1; margin:3px 0 1px;
     }
     .pct-change {
-      font-size: clamp(1.8rem, 4vw, 3rem);
-      font-weight: 900;
-      margin: 2px 0;
+      font-size: clamp(1.6rem, 4.5vh, 2.8rem);
+      font-weight:900; margin:1px 0;
     }
     .price-info {
-      font-size: clamp(0.75rem, 1.2vw, 1rem);
-      color: rgba(200,216,232,0.65);
-      margin-top: 4px;
+      font-size: clamp(0.65rem, 1.3vh, 0.9rem);
+      color:rgba(200,216,232,0.6); margin-top:3px;
     }
     .name-tag {
-      font-size: 0.65rem;
-      color: rgba(200,216,232,0.5);
-      margin-top: 2px;
-      letter-spacing: 1px;
+      font-size:0.58rem;
+      color:rgba(200,216,232,0.4);
+      margin-top:1px; letter-spacing:1px;
     }
 
-    /* Color helpers */
-    .up   { color: var(--green); text-shadow: 0 0 18px var(--shadow-g); }
-    .down { color: var(--red);   text-shadow: 0 0 18px var(--shadow-r); }
-    .flat { color: var(--text); }
+    /* Colors */
+    .up   { color:var(--green); text-shadow:0 0 16px var(--sg); }
+    .down { color:var(--red);   text-shadow:0 0 16px var(--sr); }
+    .flat { color:var(--text); }
 
-    /* ===== MARKET INDICES BAR ===== */
+    /* ── market indices bar ───────────────────────────────── */
     .market-bar {
-      background: rgba(0,0,0,0.55);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 7px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
+      flex-shrink:0;
+      background:rgba(0,0,0,0.5);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:6px 14px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
     }
-    .indices {
-      display: flex;
-      gap: 22px;
-    }
+    .indices { display:flex; gap:20px; }
     .idx {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1px;
+      display:flex; flex-direction:column;
+      align-items:center; gap:0px;
     }
     .idx-name {
-      font-size: 0.58rem;
-      letter-spacing: 1.5px;
-      color: var(--cyan);
-      text-transform: uppercase;
+      font-size:0.52rem; letter-spacing:1.5px;
+      color:var(--cyan); text-transform:uppercase;
     }
-    .idx-val {
-      font-size: 0.82rem;
-      font-weight: bold;
-    }
-    .idx-chg { font-size: 0.62rem; }
+    .idx-val { font-size:0.78rem; font-weight:bold; }
+    .idx-chg { font-size:0.58rem; }
 
     .bar-right {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 2px;
+      display:flex; flex-direction:column;
+      align-items:flex-end; gap:1px;
     }
     .refresh-txt {
-      font-size: 0.6rem;
-      color: rgba(200,216,232,0.45);
+      font-size:0.55rem;
+      color:rgba(200,216,232,0.4);
     }
     .admin-link {
-      font-size: 0.58rem;
-      color: rgba(200,216,232,0.2);
-      text-decoration: none;
-      letter-spacing: 1px;
+      font-size:0.52rem;
+      color:rgba(200,216,232,0.2);
+      text-decoration:none; letter-spacing:1px;
     }
-    .admin-link:hover { color: var(--cyan); }
+    .admin-link:hover { color:var(--cyan); }
 
-    /* Pulse animation for loading state */
-    .pulse { animation: blink 1.4s ease-in-out infinite; }
+    /* Loading pulse */
+    .pulse { animation:blink 1.4s ease-in-out infinite; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
   </style>
 </head>
 <body>
 
-<!-- Scan line -->
 <div class="scan-line"></div>
 
-<!-- Circuit SVG overlay -->
 <svg class="circuit-overlay" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <pattern id="cir" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
-      <path d="M10 100 H80 V40 H160" stroke="#00d4ff" stroke-width="1" fill="none"/>
-      <path d="M190 100 H120 V160 H40"  stroke="#00d4ff" stroke-width="1" fill="none"/>
+      <path d="M10 100 H80 V40 H160"  stroke="#00d4ff" stroke-width="1" fill="none"/>
+      <path d="M190 100 H120 V160 H40" stroke="#00d4ff" stroke-width="1" fill="none"/>
       <circle cx="80"  cy="100" r="3" fill="#00d4ff"/>
       <circle cx="120" cy="100" r="3" fill="#00d4ff"/>
       <circle cx="80"  cy="40"  r="3" fill="#00d4ff"/>
@@ -390,27 +339,29 @@
   <rect width="100%" height="100%" fill="url(#cir)"/>
 </svg>
 
-<!-- ===== MAIN WRAPPER ===== -->
 <div class="wrap">
 
-  <!-- HEADER -->
-  <div class="header">
-    <h1 id="challengeTitle">HEYKAY STOCK MARKET CHALLENGE</h1>
-    <div class="sub">⚡ REAL-TIME STOCK COMPETITION ⚡</div>
-  </div>
+  <!-- TOP BAR: spacer | title | leaderboard -->
+  <div class="top-bar">
+    <div class="top-spacer"></div>
 
-  <!-- LEADERBOARD -->
-  <div class="leaderboard">
-    <div class="lb-title">⚡ LEADERBOARD</div>
-    <div class="lb-row">
-      <span class="lb-name" id="lb-p1-name">HEYKAY</span>
-      <span class="lb-score" id="lb-p1-wins">0</span>
+    <div class="title-block">
+      <h1 id="challengeTitle">HEYKAY STOCK MARKET CHALLENGE</h1>
+      <div class="sub">⚡ REAL-TIME STOCK COMPETITION ⚡</div>
     </div>
-    <div class="lb-row">
-      <span class="lb-name" id="lb-p2-name">JUSTIN</span>
-      <span class="lb-score" id="lb-p2-wins">0</span>
+
+    <div class="leaderboard">
+      <div class="lb-title">⚡ LEADERBOARD</div>
+      <div class="lb-row">
+        <span class="lb-name" id="lb-p1-name">HEYKAY</span>
+        <span class="lb-score" id="lb-p1-wins">0</span>
+      </div>
+      <div class="lb-row">
+        <span class="lb-name" id="lb-p2-name">JUSTIN</span>
+        <span class="lb-score" id="lb-p2-wins">0</span>
+      </div>
+      <div class="lb-leader" id="lb-leader">— TIED —</div>
     </div>
-    <div class="lb-leader" id="lb-leader">— TIED —</div>
   </div>
 
   <!-- COUNTDOWN -->
@@ -422,10 +373,9 @@
   <!-- PLAYER CARDS -->
   <div class="players-row">
 
-    <!-- Player 1 -->
     <div class="card" id="card-p1">
       <div class="card-status status-open" id="p1-status">● OPEN</div>
-      <div class="p-name"  id="p1-name">HEYKAY</div>
+      <div class="p-name" id="p1-name">HEYKAY</div>
       <div class="ticker-label">TICKER</div>
       <div class="ticker-sym" id="p1-ticker">---</div>
       <div class="arrow-icon flat pulse" id="p1-arrow">◆</div>
@@ -436,10 +386,9 @@
 
     <div class="vs-badge">VS</div>
 
-    <!-- Player 2 -->
     <div class="card" id="card-p2">
       <div class="card-status status-open" id="p2-status">● OPEN</div>
-      <div class="p-name"  id="p2-name">JUSTIN</div>
+      <div class="p-name" id="p2-name">JUSTIN</div>
       <div class="ticker-label">TICKER</div>
       <div class="ticker-sym" id="p2-ticker">---</div>
       <div class="arrow-icon flat pulse" id="p2-arrow">◆</div>
@@ -476,52 +425,46 @@
     </div>
   </div>
 
-</div><!-- /wrap -->
+</div>
 
-<!-- ===== JAVASCRIPT ===== -->
 <script>
-// ─── CONFIG ────────────────────────────────────────────────
+// ─── CONFIG ──────────────────────────────────────────────────
 const DEFAULTS = {
-  title:      'HEYKAY STOCK MARKET CHALLENGE',
-  p1Name:     'HEYKAY',
-  p1Ticker:   'NVDA',
-  p2Name:     'JUSTIN',
-  p2Ticker:   'AAPL',
-  finnhubKey: '',
-  scores:     { p1: 0, p2: 0 },
-  lastScoreDate: ''
+  title:'HEYKAY STOCK MARKET CHALLENGE',
+  p1Name:'HEYKAY', p1Ticker:'NVDA',
+  p2Name:'JUSTIN', p2Ticker:'AAPL',
+  finnhubKey:'',
+  scores:{ p1:0, p2:0 },
+  lastScoreDate:''
 };
 
 function loadCfg() {
-  try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('stockChallenge') || '{}') }; }
+  try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('stockChallenge')||'{}') }; }
   catch(e) { return { ...DEFAULTS }; }
 }
-function saveCfg(c) {
-  localStorage.setItem('stockChallenge', JSON.stringify(c));
-}
+function saveCfg(c) { localStorage.setItem('stockChallenge', JSON.stringify(c)); }
 
 let cfg = loadCfg();
 let refreshSecs = 30;
 let refreshInterval = null;
 let p1Pct = null, p2Pct = null;
 
-// ─── INIT UI ──────────────────────────────────────────────
+// ─── INIT ─────────────────────────────────────────────────────
 function initUI() {
   document.getElementById('challengeTitle').textContent = cfg.title;
-  ['p1','p2'].forEach(p => {
-    const k = p === 'p1' ? 1 : 2;
-    document.getElementById(`p${k}-name`).textContent    = cfg[`${p}Name`];
-    document.getElementById(`lb-${p}-name`).textContent  = cfg[`${p}Name`];
-    document.getElementById(`p${k}-ticker`).textContent  = cfg[`${p}Ticker`] || '---';
+  [['p1',1],['p2',2]].forEach(([p,k]) => {
+    document.getElementById(`p${k}-name`).textContent   = cfg[`${p}Name`];
+    document.getElementById(`lb-${p}-name`).textContent = cfg[`${p}Name`];
+    document.getElementById(`p${k}-ticker`).textContent = cfg[`${p}Ticker`] || '---';
   });
   renderLeaderboard();
 }
 
-// ─── STOCK DATA FETCHING ──────────────────────────────────
+// ─── FETCH ────────────────────────────────────────────────────
 async function fetchStock(sym) {
-  if (!sym || sym === '---') return null;
+  if (!sym || sym==='---') return null;
 
-  // 1) Try Finnhub (supports CORS natively)
+  // Finnhub (CORS-native)
   if (cfg.finnhubKey) {
     try {
       const r = await fetch(
@@ -530,14 +473,13 @@ async function fetchStock(sym) {
       );
       if (r.ok) {
         const d = await r.json();
-        if (d && d.c > 0) {
-          return { sym, price: d.c, change: d.d, pct: d.dp, prev: d.pc, state: 'REGULAR' };
-        }
+        if (d && d.c > 0)
+          return { sym, price:d.c, change:d.d, pct:d.dp, prev:d.pc, state:'REGULAR' };
       }
-    } catch(e) { /* fall through */ }
+    } catch(e) {}
   }
 
-  // 2) Fallback: Yahoo Finance via corsproxy.io
+  // Yahoo via CORS proxies
   const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(sym)}`;
   for (const proxy of [
     `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`,
@@ -547,259 +489,199 @@ async function fetchStock(sym) {
       const r = await fetch(proxy, { signal: AbortSignal.timeout(10000) });
       if (!r.ok) continue;
       let body = await r.json();
-      // allorigins wraps in {contents: "..."}
       if (body.contents) body = JSON.parse(body.contents);
       const res = body?.quoteResponse?.result?.[0];
-      if (res?.regularMarketPrice) {
+      if (res?.regularMarketPrice)
         return {
-          sym,
-          price: res.regularMarketPrice,
-          change: res.regularMarketChange,
-          pct:   res.regularMarketChangePercent,
-          prev:  res.regularMarketPreviousClose,
-          state: res.marketState,
-          name:  res.shortName || ''
+          sym, price:res.regularMarketPrice,
+          change:res.regularMarketChange,
+          pct:res.regularMarketChangePercent,
+          prev:res.regularMarketPreviousClose,
+          state:res.marketState, name:res.shortName||''
         };
-      }
-    } catch(e) { /* try next proxy */ }
+    } catch(e) {}
   }
   return null;
 }
 
-// ─── UPDATE CARD ─────────────────────────────────────────
-function colorClass(pct) {
-  if (pct === null || pct === undefined) return 'flat';
-  if (pct >  0.001) return 'up';
-  if (pct < -0.001) return 'down';
-  return 'flat';
+// ─── CARD UPDATE ─────────────────────────────────────────────
+function cls(pct) {
+  if (pct==null) return 'flat';
+  return pct > 0.001 ? 'up' : pct < -0.001 ? 'down' : 'flat';
 }
 
 function updateCard(n, data) {
-  const arrow   = document.getElementById(`p${n}-arrow`);
-  const pctEl   = document.getElementById(`p${n}-pct`);
-  const priceEl = document.getElementById(`p${n}-price`);
-  const nameEl  = document.getElementById(`p${n}-compname`);
-  const statEl  = document.getElementById(`p${n}-status`);
+  const arrow  = document.getElementById(`p${n}-arrow`);
+  const pctEl  = document.getElementById(`p${n}-pct`);
+  const prEl   = document.getElementById(`p${n}-price`);
+  const nmEl   = document.getElementById(`p${n}-compname`);
+  const stEl   = document.getElementById(`p${n}-status`);
 
   arrow.classList.remove('pulse');
   pctEl.classList.remove('pulse');
 
   if (!data) {
-    arrow.textContent = '?';  arrow.className = 'arrow-icon flat';
-    pctEl.textContent = 'NO DATA'; pctEl.className = 'pct-change flat';
-    priceEl.textContent = '$ ---.--';
+    arrow.textContent='?';  arrow.className='arrow-icon flat';
+    pctEl.textContent='NO DATA'; pctEl.className='pct-change flat';
+    prEl.textContent='$ ---.--';
     return;
   }
 
-  const pct   = data.pct   ?? 0;
-  const cls   = colorClass(pct);
-  const sign  = pct >= 0 ? '+' : '';
+  const pct  = data.pct ?? 0;
+  const sign = pct >= 0 ? '+' : '';
+  const c    = cls(pct);
 
   arrow.textContent = pct >= 0 ? '▲' : '▼';
-  arrow.className   = `arrow-icon ${cls}`;
-
+  arrow.className   = `arrow-icon ${c}`;
   pctEl.textContent = `${sign}${pct.toFixed(2)}%`;
-  pctEl.className   = `pct-change ${cls}`;
+  pctEl.className   = `pct-change ${c}`;
 
-  priceEl.textContent = `$${data.price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-  if (data.prev) priceEl.textContent += ` / prev $${data.prev.toFixed(2)}`;
+  prEl.textContent = `$${data.price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  if (data.prev) prEl.textContent += ` / prev $${data.prev.toFixed(2)}`;
+  if (nmEl) nmEl.textContent = data.name || '';
 
-  if (nameEl) nameEl.textContent = data.name || '';
-
-  // Market state badge
-  const ms = (data.state || '').toUpperCase();
-  if (ms === 'REGULAR') {
-    statEl.textContent = '● OPEN'; statEl.className = 'card-status status-open';
-  } else if (ms === 'PRE') {
-    statEl.textContent = '◑ PRE-MARKET'; statEl.className = 'card-status status-pre';
-  } else if (ms === 'POST' || ms === 'POSTPOST') {
-    statEl.textContent = '◐ AFTER HRS'; statEl.className = 'card-status status-closed';
-  } else {
-    statEl.textContent = '● CLOSED'; statEl.className = 'card-status status-closed';
-  }
+  const ms = (data.state||'').toUpperCase();
+  if      (ms==='REGULAR')              { stEl.textContent='● OPEN';     stEl.className='card-status status-open'; }
+  else if (ms==='PRE')                  { stEl.textContent='◑ PRE';      stEl.className='card-status status-pre'; }
+  else if (ms==='POST'||ms==='POSTPOST'){ stEl.textContent='◐ AFTER HRS';stEl.className='card-status status-closed'; }
+  else                                  { stEl.textContent='● CLOSED';   stEl.className='card-status status-closed'; }
 }
 
-// ─── WINNING LOGIC ────────────────────────────────────────
+// ─── WINNER ───────────────────────────────────────────────────
 function applyWinner() {
   const c1 = document.getElementById('card-p1');
   const c2 = document.getElementById('card-p2');
+  document.querySelectorAll('.win-crown').forEach(el=>el.remove());
 
-  // Remove old crowns
-  document.querySelectorAll('.win-crown').forEach(el => el.remove());
+  if (p1Pct===null||p2Pct===null) { c1.className='card'; c2.className='card'; return; }
 
-  if (p1Pct === null || p2Pct === null) {
-    c1.className = 'card'; c2.className = 'card'; return;
+  function addCrown(card) {
+    const d = document.createElement('div');
+    d.className='win-crown'; d.textContent='👑 WINNING';
+    card.appendChild(d);
   }
-
-  if (p1Pct > p2Pct) {
-    c1.className = 'card winning'; c2.className = 'card losing';
-    const crown = document.createElement('div');
-    crown.className = 'win-crown'; crown.textContent = '👑 WINNING';
-    c1.appendChild(crown);
-  } else if (p2Pct > p1Pct) {
-    c2.className = 'card winning'; c1.className = 'card losing';
-    const crown = document.createElement('div');
-    crown.className = 'win-crown'; crown.textContent = '👑 WINNING';
-    c2.appendChild(crown);
-  } else {
-    c1.className = 'card'; c2.className = 'card';
-  }
+  if      (p1Pct > p2Pct) { c1.className='card winning'; c2.className='card losing'; addCrown(c1); }
+  else if (p2Pct > p1Pct) { c2.className='card winning'; c1.className='card losing'; addCrown(c2); }
+  else                     { c1.className='card'; c2.className='card'; }
 }
 
-// ─── DAILY SCORE TRACKING ─────────────────────────────────
-function checkDailyScore() {
-  if (p1Pct === null || p2Pct === null) return;
-  const today = new Date().toDateString();
-  // Only record winner once per day, after market close (simplistic check)
-  if (cfg.lastScoreDate === today) return;
+// ─── DAILY SCORE ──────────────────────────────────────────────
+function getETHour(date) {
+  const jan = new Date(date.getFullYear(),0,1).getTimezoneOffset();
+  const jul = new Date(date.getFullYear(),6,1).getTimezoneOffset();
+  const isDST = Math.min(jan,jul) === date.getTimezoneOffset();
+  const etOff = isDST ? -4 : -5;
+  const et = new Date(date.getTime() + date.getTimezoneOffset()*60000 + etOff*3600000);
+  return et.getHours() + et.getMinutes()/60;
+}
 
-  const now = new Date();
-  // Check if it's past 4 PM ET
-  const etHour = getETHour(now);
-  if (etHour >= 16) {
+function checkDailyScore() {
+  if (p1Pct===null||p2Pct===null) return;
+  const today = new Date().toDateString();
+  if (cfg.lastScoreDate===today) return;
+  if (getETHour(new Date()) >= 16) {
     cfg.lastScoreDate = today;
-    if      (p1Pct > p2Pct) { cfg.scores.p1 = (cfg.scores.p1 || 0) + 1; }
-    else if (p2Pct > p1Pct) { cfg.scores.p2 = (cfg.scores.p2 || 0) + 1; }
+    if      (p1Pct>p2Pct) cfg.scores.p1=(cfg.scores.p1||0)+1;
+    else if (p2Pct>p1Pct) cfg.scores.p2=(cfg.scores.p2||0)+1;
     saveCfg(cfg);
     renderLeaderboard();
   }
 }
 
-function getETHour(date) {
-  // Approximate ET offset
-  const jan = new Date(date.getFullYear(),0,1).getTimezoneOffset();
-  const jul = new Date(date.getFullYear(),6,1).getTimezoneOffset();
-  const isDST = Math.min(jan,jul) === date.getTimezoneOffset();
-  const etOff = isDST ? -4 : -5;
-  const utcMs = date.getTime() + date.getTimezoneOffset() * 60000;
-  const etDate = new Date(utcMs + etOff * 3600000);
-  return etDate.getHours() + etDate.getMinutes()/60;
-}
-
 function renderLeaderboard() {
-  const s = cfg.scores || { p1:0, p2:0 };
-  document.getElementById('lb-p1-wins').textContent = s.p1 ?? 0;
-  document.getElementById('lb-p2-wins').textContent = s.p2 ?? 0;
+  const s = cfg.scores||{p1:0,p2:0};
+  document.getElementById('lb-p1-wins').textContent = s.p1??0;
+  document.getElementById('lb-p2-wins').textContent = s.p2??0;
   const badge = document.getElementById('lb-leader');
-  if ((s.p1??0) > (s.p2??0)) {
-    badge.textContent = `👑 ${cfg.p1Name} LEADS`;
-    badge.style.color = 'var(--gold)';
-  } else if ((s.p2??0) > (s.p1??0)) {
-    badge.textContent = `👑 ${cfg.p2Name} LEADS`;
-    badge.style.color = 'var(--gold)';
-  } else {
-    badge.textContent = '🤝 TIED';
-    badge.style.color = 'var(--cyan)';
-  }
+  if      ((s.p1??0)>(s.p2??0)) { badge.textContent=`👑 ${cfg.p1Name} LEADS`; badge.style.color='var(--gold)'; }
+  else if ((s.p2??0)>(s.p1??0)) { badge.textContent=`👑 ${cfg.p2Name} LEADS`; badge.style.color='var(--gold)'; }
+  else                           { badge.textContent='🤝 TIED';                badge.style.color='var(--cyan)'; }
 }
 
-// ─── INDEX HELPER ─────────────────────────────────────────
-function updateIndex(prefix, data) {
-  const val = document.getElementById(`${prefix}-val`);
-  const chg = document.getElementById(`${prefix}-chg`);
-  if (!data) { val.textContent='---'; chg.textContent='---'; return; }
-  const pct  = data.pct ?? 0;
-  const cls  = colorClass(pct);
-  val.textContent = data.price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  val.className   = `idx-val ${cls}`;
-  chg.textContent = `${pct>=0?'+':''}${pct.toFixed(2)}%`;
-  chg.className   = `idx-chg ${cls}`;
+// ─── INDICES ─────────────────────────────────────────────────
+function updateIndex(pfx, data) {
+  const vEl = document.getElementById(`${pfx}-val`);
+  const cEl = document.getElementById(`${pfx}-chg`);
+  if (!data) { vEl.textContent='---'; cEl.textContent='---'; return; }
+  const pct = data.pct??0;
+  const c   = cls(pct);
+  vEl.textContent = data.price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  vEl.className   = `idx-val ${c}`;
+  cEl.textContent = `${pct>=0?'+':''}${pct.toFixed(2)}%`;
+  cEl.className   = `idx-chg ${c}`;
 }
 
-// ─── MAIN FETCH ───────────────────────────────────────────
+// ─── MAIN FETCH ───────────────────────────────────────────────
 async function fetchAll() {
   document.getElementById('next-refresh').textContent = 'Updating…';
-
-  const [d1, d2, dow, sp, nq] = await Promise.all([
-    fetchStock(cfg.p1Ticker),
-    fetchStock(cfg.p2Ticker),
-    fetchStock('^DJI'),
-    fetchStock('^GSPC'),
-    fetchStock('^IXIC')
+  const [d1,d2,dow,sp,nq] = await Promise.all([
+    fetchStock(cfg.p1Ticker), fetchStock(cfg.p2Ticker),
+    fetchStock('^DJI'), fetchStock('^GSPC'), fetchStock('^IXIC')
   ]);
-
-  p1Pct = d1?.pct ?? null;
-  p2Pct = d2?.pct ?? null;
-
-  updateCard(1, d1);
-  updateCard(2, d2);
-  applyWinner();
-  checkDailyScore();
-
-  updateIndex('dow', dow);
-  updateIndex('sp',  sp);
-  updateIndex('nq',  nq);
-
-  const t = new Date();
-  document.getElementById('last-updated').textContent =
-    `Updated: ${t.toLocaleTimeString()}`;
+  p1Pct = d1?.pct??null;
+  p2Pct = d2?.pct??null;
+  updateCard(1,d1); updateCard(2,d2);
+  applyWinner(); checkDailyScore();
+  updateIndex('dow',dow); updateIndex('sp',sp); updateIndex('nq',nq);
+  document.getElementById('last-updated').textContent = `Updated: ${new Date().toLocaleTimeString()}`;
   refreshSecs = 30;
 }
 
-// ─── REFRESH TIMER ────────────────────────────────────────
+// ─── TIMER ────────────────────────────────────────────────────
 function startTimer() {
   if (refreshInterval) clearInterval(refreshInterval);
-  refreshInterval = setInterval(() => {
+  refreshInterval = setInterval(()=>{
     refreshSecs--;
     document.getElementById('next-refresh').textContent =
-      refreshSecs > 0 ? `Refresh in ${refreshSecs}s` : 'Refreshing…';
-    if (refreshSecs <= 0) fetchAll();
+      refreshSecs>0 ? `Refresh in ${refreshSecs}s` : 'Refreshing…';
+    if (refreshSecs<=0) fetchAll();
   }, 1000);
 }
 
-// ─── MARKET COUNTDOWN ─────────────────────────────────────
+// ─── COUNTDOWN ───────────────────────────────────────────────
 function updateCountdown() {
   const now = new Date();
   const jan = new Date(now.getFullYear(),0,1).getTimezoneOffset();
   const jul = new Date(now.getFullYear(),6,1).getTimezoneOffset();
-  const isDST = Math.min(jan,jul) === now.getTimezoneOffset();
+  const isDST = Math.min(jan,jul)===now.getTimezoneOffset();
   const etOff = isDST ? -4 : -5;
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
-  const et    = new Date(utcMs + etOff * 3600000);
+  const et = new Date(now.getTime()+now.getTimezoneOffset()*60000+etOff*3600000);
 
-  const day  = et.getDay();
-  const h    = et.getHours();
-  const m    = et.getMinutes();
-  const s    = et.getSeconds();
-  const mins = h * 60 + m;
+  const day=et.getDay(), h=et.getHours(), m=et.getMinutes(), s=et.getSeconds();
+  const mins=h*60+m;
+  const timerEl=document.getElementById('countdown');
+  const labelEl=document.getElementById('countdown-label');
 
-  const timerEl = document.getElementById('countdown');
-  const labelEl = document.getElementById('countdown-label');
-
-  if (day === 0 || day === 6) {
-    timerEl.textContent = 'WEEKEND';
-    timerEl.className = 'countdown-timer closed';
-    labelEl.textContent = 'MARKET CLOSED — WEEKEND';
-    return;
+  if (day===0||day===6) {
+    timerEl.textContent='WEEKEND'; timerEl.className='countdown-timer closed';
+    labelEl.textContent='MARKET CLOSED — WEEKEND'; return;
   }
 
-  const OPEN  = 9*60+30;
-  const CLOSE = 16*60;
+  const OPEN=9*60+30, CLOSE=16*60;
 
-  if (mins < OPEN) {
-    const rem = (OPEN - mins)*60 - s;
-    const hh = Math.floor(rem/3600), mm = Math.floor((rem%3600)/60), ss = rem%60;
-    labelEl.textContent = 'TIME UNTIL MARKET OPEN';
-    timerEl.textContent = `${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
-    timerEl.className   = 'countdown-timer';
-  } else if (mins >= CLOSE) {
-    timerEl.textContent = 'MARKET CLOSED';
-    timerEl.className   = 'countdown-timer closed';
-    labelEl.textContent = 'NYSE MARKET HOURS: 9:30AM – 4:00PM ET';
+  if (mins<OPEN) {
+    const rem=(OPEN-mins)*60-s;
+    const hh=Math.floor(rem/3600),mm=Math.floor((rem%3600)/60),ss=rem%60;
+    labelEl.textContent='TIME UNTIL MARKET OPEN';
+    timerEl.textContent=`${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    timerEl.className='countdown-timer';
+  } else if (mins>=CLOSE) {
+    timerEl.textContent='MARKET CLOSED'; timerEl.className='countdown-timer closed';
+    labelEl.textContent='NYSE MARKET HOURS: 9:30AM – 4:00PM ET';
   } else {
-    const rem = (CLOSE - mins)*60 - s;
-    const hh = Math.floor(rem/3600), mm = Math.floor((rem%3600)/60), ss = rem%60;
-    labelEl.textContent = 'TIME UNTIL MARKET CLOSE';
-    timerEl.textContent = `${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
-    timerEl.className   = rem < 3600 ? 'countdown-timer urgent' : 'countdown-timer';
+    const rem=(CLOSE-mins)*60-s;
+    const hh=Math.floor(rem/3600),mm=Math.floor((rem%3600)/60),ss=rem%60;
+    labelEl.textContent='TIME UNTIL MARKET CLOSE';
+    timerEl.textContent=`${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    timerEl.className=rem<3600?'countdown-timer urgent':'countdown-timer';
   }
 }
 
-// ─── KICK OFF ─────────────────────────────────────────────
+// ─── GO ───────────────────────────────────────────────────────
 initUI();
 fetchAll();
 startTimer();
-setInterval(updateCountdown, 1000);
+setInterval(updateCountdown,1000);
 updateCountdown();
 </script>
 </body>
