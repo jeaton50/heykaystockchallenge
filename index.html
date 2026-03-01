@@ -57,8 +57,8 @@
       position:relative; z-index:1;
       display:flex; flex-direction:column;
       height:100vh;
-      padding:7px 12px 6px;
-      gap:4px;
+      padding:8px 14px 7px;
+      gap:6px;
     }
 
     /* ── TOP BAR ────────────────────────────────────────────── */
@@ -118,7 +118,7 @@
 
     /* ── PLAYERS ROW ────────────────────────────────────────── */
     .players-row {
-      display:flex; gap:10px;
+      display:flex; gap:14px;
       flex:1; min-height:0; align-items:stretch;
     }
 
@@ -136,7 +136,7 @@
       background:var(--card);
       border:1px solid var(--border);
       border-radius:12px;
-      padding:10px 12px 8px;
+      padding:10px 14px 10px;
       display:flex; flex-direction:column;
       position:relative; overflow:hidden;
       transition:border-color .5s, box-shadow .5s, opacity .5s;
@@ -173,21 +173,21 @@
       text-align:center; flex-shrink:0; margin-bottom:5px;
     }
     .p-name {
-      font-size:clamp(.75rem,1.5vh,1.05rem);
+      font-size:clamp(.85rem,1.7vh,1.15rem);
       font-weight:bold; color:var(--cyan);
       letter-spacing:4px; text-transform:uppercase;
     }
     .port-value {
-      font-size:clamp(1.2rem,3vh,2rem);
+      font-size:clamp(1.3rem,3.2vh,2.2rem);
       font-weight:900; letter-spacing:2px;
-      margin:1px 0;
+      margin:2px 0;
     }
     .port-pnl {
-      font-size:clamp(.62rem,1.3vh,.88rem);
+      font-size:clamp(.7rem,1.4vh,.95rem);
       font-weight:bold; letter-spacing:1px;
     }
     .port-budget {
-      font-size:.52rem; color:var(--dim); margin-top:1px; letter-spacing:1px;
+      font-size:clamp(.55rem,1vh,.7rem); color:var(--dim); margin-top:2px; letter-spacing:1px;
     }
 
     /* ── HOLDINGS TABLE ─────────────────────────────────────── */
@@ -205,39 +205,39 @@
 
     table.htbl {
       width:100%; border-collapse:collapse;
-      font-size:clamp(.52rem,1.1vh,.75rem);
+      font-size:clamp(.78rem,1.55vh,1.05rem);
     }
     table.htbl thead tr {
       border-bottom:1px solid var(--border);
     }
     table.htbl th {
       color:var(--dim);
-      font-size:.5rem; letter-spacing:2px;
+      font-size:clamp(.6rem,1.1vh,.78rem); letter-spacing:2px;
       text-transform:uppercase;
-      padding:2px 4px; font-weight:normal;
+      padding:4px 5px; font-weight:normal;
     }
     table.htbl th.r, table.htbl td.r { text-align:right; }
     table.htbl th.c, table.htbl td.c { text-align:center; }
 
     table.htbl tbody tr {
-      border-bottom:1px solid rgba(0,212,255,0.06);
+      border-bottom:1px solid rgba(0,212,255,0.08);
       transition:background .15s;
     }
-    table.htbl tbody tr:hover { background:rgba(0,212,255,0.05); }
+    table.htbl tbody tr:hover { background:rgba(0,212,255,0.07); }
     table.htbl td {
-      padding:3px 4px;
+      padding:clamp(4px,0.9vh,8px) 5px;
       white-space:nowrap;
     }
     td.sym {
       font-weight:bold; color:#fff;
-      font-size:clamp(.58rem,1.2vh,.82rem);
-      letter-spacing:1px;
+      font-size:clamp(.85rem,1.7vh,1.1rem);
+      letter-spacing:2px;
     }
     td.price-cell { color:var(--text); }
     td.val-cell   { color:var(--text); }
     td.empty-row  {
       text-align:center; color:var(--dim);
-      padding:18px 0; font-size:.65rem; letter-spacing:1px;
+      padding:18px 0; font-size:.75rem; letter-spacing:1px;
     }
 
     /* colors */
