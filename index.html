@@ -447,8 +447,8 @@ async function fetchPriceMap(tickers) {
   // Try Yahoo batch
   const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(tickers.join(','))}`;
   for (const proxy of [
-    `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`,
-    `https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`
+    `https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`,
+    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(yahooUrl)}`
   ]) {
     try {
       const r = await fetch(proxy, {signal:AbortSignal.timeout(12000)});
