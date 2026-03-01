@@ -223,6 +223,66 @@
     .pw-inline input { flex:1; }
 
     #pw-note { font-size:.62rem; margin-top:4px; min-height:16px; letter-spacing:1px; }
+
+    /* ── CSV IMPORT ─────────────────────────────────────────── */
+    .csv-row {
+      display:flex; gap:8px; flex-wrap:wrap;
+      margin-top:8px; align-items:center;
+    }
+    .csv-hint {
+      font-size:.55rem; color:var(--dim); letter-spacing:1px;
+      margin-top:5px; line-height:1.6;
+    }
+    .csv-hint code {
+      color:var(--cyan); background:rgba(0,212,255,.08);
+      padding:1px 5px; border-radius:3px;
+    }
+
+    /* ── IMPORT MODAL ───────────────────────────────────────── */
+    #csv-modal-bg {
+      display:none; position:fixed; inset:0; z-index:200;
+      background:rgba(0,0,0,.82); align-items:center; justify-content:center;
+    }
+    #csv-modal-bg.open { display:flex; }
+    #csv-modal {
+      position:relative;
+      background:var(--card); border:1px solid var(--border);
+      border-radius:10px; padding:20px 22px;
+      min-width:340px; max-width:560px; width:90%;
+    }
+    #csv-modal::before { content:''; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:2px solid var(--cyan); border-left:2px solid var(--cyan); }
+    #csv-modal::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:2px solid var(--cyan); border-right:2px solid var(--cyan); }
+    .modal-title {
+      font-size:.75rem; font-weight:900; color:var(--gold);
+      letter-spacing:3px; margin-bottom:12px;
+    }
+    .modal-subtitle {
+      font-size:.58rem; color:var(--cyan); letter-spacing:2px; margin-bottom:10px;
+    }
+    #csv-preview-table {
+      width:100%; border-collapse:collapse; margin-bottom:12px;
+    }
+    #csv-preview-table thead th {
+      font-size:.52rem; color:var(--dim); letter-spacing:2px;
+      text-transform:uppercase; padding:3px 6px;
+      border-bottom:1px solid var(--border); text-align:left;
+    }
+    #csv-preview-table thead th.r { text-align:right; }
+    #csv-preview-table tbody tr { border-bottom:1px solid rgba(0,212,255,.06); }
+    #csv-preview-table tbody td {
+      padding:4px 6px; font-size:.72rem;
+    }
+    #csv-preview-table tbody td.r { text-align:right; }
+    .csv-locked-badge {
+      font-size:.5rem; color:var(--green); border:1px solid var(--green);
+      padding:1px 4px; border-radius:3px; letter-spacing:1px; margin-left:4px;
+    }
+    .csv-error-row td { color:var(--red) !important; }
+    #csv-modal-err {
+      font-size:.62rem; color:var(--red); min-height:14px;
+      letter-spacing:1px; margin-bottom:8px;
+    }
+    .modal-btns { display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
   </style>
 </head>
 <body>
@@ -290,6 +350,16 @@
       <button class="btn btn-green" onclick="lockPrices(1)">🔒 LOCK IN PRICES NOW</button>
       <button class="btn btn-orange" onclick="unlockPrices(1)">🔓 UNLOCK / RESET</button>
     </div>
+
+    <input type="file" id="p1-csv-file" accept=".csv,text/csv" style="display:none" onchange="handleCsvFile(1,this)"/>
+    <div class="csv-row">
+      <button class="btn btn-cyan" onclick="document.getElementById('p1-csv-file').click()">📂 IMPORT CSV</button>
+      <button class="btn btn-cyan" onclick="downloadTemplate(1)">⬇ DOWNLOAD TEMPLATE</button>
+    </div>
+    <p class="csv-hint">
+      CSV format — <code>TICKER,AMOUNT</code> &nbsp;or&nbsp; <code>TICKER,AMOUNT,BUY_PRICE,SHARES</code><br>
+      Rows with BUY_PRICE will be treated as already locked. Max 10 rows used.
+    </p>
   </div>
 
   <!-- PLAYER 2 PORTFOLIO -->
@@ -328,6 +398,16 @@
       <button class="btn btn-green" onclick="lockPrices(2)">🔒 LOCK IN PRICES NOW</button>
       <button class="btn btn-orange" onclick="unlockPrices(2)">🔓 UNLOCK / RESET</button>
     </div>
+
+    <input type="file" id="p2-csv-file" accept=".csv,text/csv" style="display:none" onchange="handleCsvFile(2,this)"/>
+    <div class="csv-row">
+      <button class="btn btn-cyan" onclick="document.getElementById('p2-csv-file').click()">📂 IMPORT CSV</button>
+      <button class="btn btn-cyan" onclick="downloadTemplate(2)">⬇ DOWNLOAD TEMPLATE</button>
+    </div>
+    <p class="csv-hint">
+      CSV format — <code>TICKER,AMOUNT</code> &nbsp;or&nbsp; <code>TICKER,AMOUNT,BUY_PRICE,SHARES</code><br>
+      Rows with BUY_PRICE will be treated as already locked. Max 10 rows used.
+    </p>
   </div>
 
   <!-- API KEY -->
@@ -391,6 +471,31 @@
   <a href="index.html" class="back-link">← BACK TO CHALLENGE</a>
 
 </div>
+</div>
+
+<!-- ── CSV IMPORT MODAL ──────────────────────────────────────────────────── -->
+<div id="csv-modal-bg">
+  <div id="csv-modal">
+    <div class="modal-title">📂 CSV IMPORT PREVIEW</div>
+    <div class="modal-subtitle" id="csv-modal-player">PLAYER — PORTFOLIO</div>
+    <table id="csv-preview-table">
+      <thead>
+        <tr>
+          <th style="width:32px">#</th>
+          <th>TICKER</th>
+          <th class="r">INVEST ($)</th>
+          <th class="r">BUY PRICE</th>
+          <th class="r">SHARES</th>
+        </tr>
+      </thead>
+      <tbody id="csv-preview-body"></tbody>
+    </table>
+    <div id="csv-modal-err"></div>
+    <div class="modal-btns">
+      <button class="btn btn-red" onclick="closeImportModal()">✕ CANCEL</button>
+      <button class="btn btn-green" id="csv-apply-btn" onclick="applyImport()">✓ APPLY IMPORT</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -728,6 +833,208 @@ function showMsg(msg, type) {
   const el = document.getElementById('save-msg');
   el.textContent = msg; el.className = `save-msg ${type||''}`;
   setTimeout(()=>{ el.textContent=''; el.className='save-msg'; }, 6000);
+}
+
+// ─── CSV IMPORT ───────────────────────────────────────────────────────────
+let _csvPendingPlayer = null;
+let _csvPendingRows   = null;
+
+/** Called when user picks a file from the hidden <input type="file"> */
+function handleCsvFile(playerNum, inputEl) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  inputEl.value = ''; // reset so same file can be re-imported
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const { rows, errors } = parseCsv(e.target.result);
+    if (!rows.length && errors.length) {
+      showMsg(`⚠ CSV parse error: ${errors[0]}`, 'err');
+      return;
+    }
+    showImportModal(playerNum, rows, errors);
+  };
+  reader.readAsText(file);
+}
+
+/**
+ * Parse CSV text.
+ * Accepted formats (header row optional, detected automatically):
+ *   TICKER,AMOUNT
+ *   TICKER,AMOUNT,BUY_PRICE
+ *   TICKER,AMOUNT,BUY_PRICE,SHARES
+ *
+ * Returns { rows: [{ticker,allocated,buyPrice?,shares?,locked}], errors: [] }
+ */
+function parseCsv(text) {
+  const lines  = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+  const rows   = [];
+  const errors = [];
+
+  if (!lines.length) { errors.push('File is empty.'); return {rows,errors}; }
+
+  // Detect and skip header row
+  let startIdx = 0;
+  const firstLower = lines[0].toLowerCase();
+  if (firstLower.startsWith('ticker') || firstLower.startsWith('#') || firstLower.startsWith('symbol')) {
+    startIdx = 1;
+  }
+
+  for (let i = startIdx; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line || line.startsWith('#')) continue;    // skip blank / comment lines
+
+    // Handle quoted fields (basic)
+    const cols = line.split(',').map(c => c.trim().replace(/^["']|["']$/g,''));
+
+    const ticker = cols[0]?.toUpperCase().replace(/[^A-Z0-9^.:-]/g,'');
+    if (!ticker) { errors.push(`Row ${i+1}: empty ticker — skipped.`); continue; }
+
+    const amount = parseFloat(cols[1]);
+    if (!cols[1] || isNaN(amount) || amount <= 0) {
+      errors.push(`Row ${i+1} (${ticker}): invalid amount — skipped.`);
+      continue;
+    }
+
+    const buyPriceRaw = cols[2] ? parseFloat(cols[2]) : null;
+    const sharesRaw   = cols[3] ? parseFloat(cols[3]) : null;
+    const locked      = buyPriceRaw !== null && !isNaN(buyPriceRaw) && buyPriceRaw > 0;
+
+    const row = { ticker, allocated: amount, locked };
+    if (locked) {
+      row.buyPrice = buyPriceRaw;
+      // Derive shares from amount/price if not provided or invalid
+      const derivedShares = (sharesRaw && !isNaN(sharesRaw) && sharesRaw > 0)
+        ? sharesRaw
+        : amount / buyPriceRaw;
+      row.shares = derivedShares;
+    }
+
+    rows.push(row);
+    if (rows.length >= NUM_ROWS) break;   // cap at 10
+  }
+
+  if (!rows.length) errors.push('No valid data rows found.');
+  return { rows, errors };
+}
+
+/** Render the preview modal */
+function showImportModal(playerNum, rows, warnings) {
+  _csvPendingPlayer = playerNum;
+  _csvPendingRows   = rows;
+
+  const pName = playerNum === 1
+    ? (document.getElementById('p1-name').value.trim()||'PLAYER 1')
+    : (document.getElementById('p2-name').value.trim()||'PLAYER 2');
+
+  document.getElementById('csv-modal-player').textContent =
+    `PLAYER ${playerNum} — ${pName.toUpperCase()} — ${rows.length} POSITION${rows.length!==1?'S':''}`;
+
+  const tbody = document.getElementById('csv-preview-body');
+  tbody.innerHTML = '';
+
+  rows.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    const priceStr  = r.locked ? `$${r.buyPrice.toFixed(2)}`    : '—';
+    const sharesStr = r.locked ? r.shares.toFixed(4)             : '—';
+    const badge     = r.locked ? '<span class="csv-locked-badge">LOCKED</span>' : '';
+    tr.innerHTML = `
+      <td style="color:var(--dim);font-size:.65rem;text-align:center">${i+1}</td>
+      <td style="font-weight:bold;letter-spacing:1px">${r.ticker}${badge}</td>
+      <td class="r">$${r.allocated.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td class="r" style="color:${r.locked?'var(--green)':'var(--dim)'}">${priceStr}</td>
+      <td class="r" style="color:${r.locked?'var(--cyan)':'var(--dim)'}">${sharesStr}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Show warnings (non-fatal parse issues)
+  const errEl = document.getElementById('csv-modal-err');
+  if (warnings.length) {
+    errEl.textContent = `⚠ ${warnings.join(' | ')}`;
+  } else {
+    errEl.textContent = '';
+  }
+
+  document.getElementById('csv-modal-bg').classList.add('open');
+}
+
+/** Apply the previewed import to the form */
+function applyImport() {
+  const n   = _csvPendingPlayer;
+  const key = n===1 ? 'p1' : 'p2';
+
+  if (!n || !_csvPendingRows) return;
+
+  // Reload cfg to avoid overwriting anything
+  cfg = loadCfg();
+
+  // Build holdings array from parsed rows
+  const newHoldings = _csvPendingRows.map(r => ({
+    ticker:    r.ticker,
+    allocated: r.allocated,
+    buyPrice:  r.locked ? r.buyPrice  : null,
+    shares:    r.locked ? r.shares    : null,
+  }));
+
+  cfg[`${key}Holdings`] = newHoldings;
+  if (_csvPendingRows.some(r=>r.locked)) {
+    cfg[`${key}LockDate`] = new Date().toLocaleString() + ' (CSV import)';
+  } else {
+    delete cfg[`${key}LockDate`];
+  }
+
+  saveCfg(cfg);
+  buildHoldingRows(n);
+  recalcAlloc(n);
+
+  closeImportModal();
+  showMsg(`✓ Imported ${newHoldings.length} holding(s) for Player ${n}. Click SAVE ALL SETTINGS to confirm.`, 'ok');
+}
+
+function closeImportModal() {
+  document.getElementById('csv-modal-bg').classList.remove('open');
+  _csvPendingPlayer = null;
+  _csvPendingRows   = null;
+}
+
+// Close modal on background click
+document.getElementById('csv-modal-bg').addEventListener('click', e => {
+  if (e.target === document.getElementById('csv-modal-bg')) closeImportModal();
+});
+
+/** Download a pre-filled CSV template for a player */
+function downloadTemplate(playerNum) {
+  const key = playerNum===1 ? 'p1' : 'p2';
+  const pName = (playerNum===1
+    ? document.getElementById('p1-name').value.trim()
+    : document.getElementById('p2-name').value.trim()
+  ).toUpperCase() || `PLAYER${playerNum}`;
+
+  const budget = Number(
+    playerNum===1 ? document.getElementById('p1-budget').value
+                  : document.getElementById('p2-budget').value
+  ) || 1000;
+
+  const perStock = (budget / NUM_ROWS).toFixed(2);
+
+  const header  = '# TICKER,AMOUNT,BUY_PRICE,SHARES\n'
+    + '# Leave BUY_PRICE and SHARES blank (or omit columns) to lock prices later.\n'
+    + '# BUY_PRICE column: fill in to mark position as already locked.\n';
+
+  const sample = [
+    'AAPL', 'NVDA', 'MSFT', 'GOOGL', 'AMZN',
+    'META', 'TSLA', 'SPY',  'QQQ',  'BRK-B'
+  ].map(t => `${t},${perStock},,`).join('\n');
+
+  const csv  = `${header}${sample}\n`;
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `portfolio_template_${pName}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 </script>
 </body>
