@@ -106,7 +106,7 @@
 
     /* ── COUNTDOWN ──────────────────────────────────────────── */
     .countdown-wrap { text-align:center; flex-shrink:0; line-height:1.2; }
-    .cd-label { font-size:.52rem; letter-spacing:4px; color:var(--cyan); opacity:.8; }
+    .cd-label { font-size:.72rem; letter-spacing:4px; color:var(--cyan); opacity:.8; }
     .cd-timer {
       font-size:clamp(1rem,2.5vh,1.7rem);
       font-weight:900; letter-spacing:3px;
@@ -114,7 +114,7 @@
       color:var(--gold); text-shadow:0 0 14px var(--sw);
     }
     .cd-timer.urgent { color:var(--red); text-shadow:0 0 14px var(--sr); }
-    .cd-timer.closed { color:#ff8844; text-shadow:none; font-size:clamp(.85rem,1.8vh,1.2rem); }
+    .cd-timer.closed { color:#ff8844; text-shadow:none; font-size:clamp(1rem,2.5vh,1.7rem); }
 
     /* ── PLAYERS ROW ────────────────────────────────────────── */
     .players-row {
@@ -254,9 +254,9 @@
     }
     .indices { display:flex; gap:18px; }
     .idx { display:flex; flex-direction:column; align-items:center; gap:0; }
-    .idx-name { font-size:.5rem; letter-spacing:1.5px; color:var(--cyan); }
-    .idx-val  { font-size:.72rem; font-weight:bold; }
-    .idx-chg  { font-size:.55rem; }
+    .idx-name { font-size:.72rem; letter-spacing:1.5px; color:var(--cyan); }
+    .idx-val  { font-size:1.05rem; font-weight:bold; }
+    .idx-chg  { font-size:.8rem; }
 
     .bar-right { display:flex; flex-direction:column; align-items:flex-end; gap:1px; }
     .rtxt { font-size:.5rem; color:var(--dim); }
@@ -510,7 +510,7 @@ function updatePortfolio(player, n, priceMap) {
   tbody.innerHTML = '';
 
   if (!holdings.length || !holdings.some(h=>h.ticker)) {
-    tbody.innerHTML = `<tr><td class="empty-row" colspan="4">No holdings set up yet.<br>Visit ⚙ Admin to configure.</td></tr>`;
+    tbody.innerHTML = '';
     document.getElementById(`p${n}-value`).textContent = fmt$(budget);
     document.getElementById(`p${n}-value`).className   = 'port-value flat';
     document.getElementById(`p${n}-pnl`).textContent   = 'P&L: set up portfolio in Admin';
