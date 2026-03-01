@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HeyKay Stock Market Challenge</title>
+  <style>
+    /* ===== RESET & VARIABLES ===== */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    :root {
+      --bg:       #070d1a;
+      --bg-card:  rgba(6, 16, 38, 0.95);
+      --cyan:     #00d4ff;
+      --gold:     #ffd700;
+      --green:    #00ff88;
+      --red:      #ff3838;
+      --text:     #c8d8e8;
+      --border:   rgba(0, 212, 255, 0.22);
+      --border-w: rgba(255, 215, 0, 0.5);
+      --shadow-g: rgba(0, 255, 136, 0.35);
+      --shadow-r: rgba(255, 56, 56, 0.35);
+      --shadow-w: rgba(255, 215, 0, 0.3);
+    }
+
+    /* ===== BODY + CIRCUIT BACKGROUND ===== */
+    body {
+      font-family: 'Courier New', 'Lucida Console', monospace;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Grid lines */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Circuit traces (SVG overlay) */
+    .circuit-overlay {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.18;
+    }
+
+    /* Scan line animation */
+    .scan-line {
+      position: fixed; left: 0; right: 0; height: 2px; top: 0;
+      background: linear-gradient(90deg, transparent, var(--cyan) 30%, var(--cyan) 70%, transparent);
+      animation: scanDown 6s linear infinite;
+      opacity: 0.25;
+      pointer-events: none;
+      z-index: 200;
+    }
+    @keyframes scanDown { 0%{top:-2px} 100%{top:100vh} }
+
+    /* ===== MAIN CONTAINER ===== */
+    .wrap {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 12px 18px 10px;
+      gap: 6px;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      text-align: center;
+      position: relative;
+      padding: 2px 0 4px;
+    }
+    .header h1 {
+      font-size: clamp(1.4rem, 3vw, 2.3rem);
+      font-weight: 900;
+      color: var(--gold);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      text-shadow:
+        0 0 18px rgba(255,215,0,0.7),
+        0 0 40px rgba(255,215,0,0.35),
+        0 0 70px rgba(255,215,0,0.15);
+    }
+    .header .sub {
+      font-size: 0.62rem;
+      letter-spacing: 5px;
+      color: var(--cyan);
+      margin-top: 2px;
+      opacity: 0.8;
+    }
+
+    /* ===== LEADERBOARD (top-right corner) ===== */
+    .leaderboard {
+      position: absolute;
+      top: 10px;
+      right: 18px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      min-width: 165px;
+      backdrop-filter: blur(4px);
+    }
+    .lb-title {
+      color: var(--gold);
+      font-size: 0.62rem;
+      letter-spacing: 3px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,215,0,0.2);
+      padding-bottom: 6px;
+      margin-bottom: 7px;
+    }
+    .lb-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 3px 0;
+      font-size: 0.82rem;
+    }
+    .lb-name { color: var(--cyan); letter-spacing: 1px; }
+    .lb-score {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--green);
+      text-shadow: 0 0 8px var(--shadow-g);
+      min-width: 28px;
+      text-align: right;
+    }
+    .lb-leader {
+      text-align: center;
+      font-size: 0.62rem;
+      margin-top: 7px;
+      padding-top: 5px;
+      border-top: 1px solid var(--border);
+      color: var(--gold);
+      letter-spacing: 1px;
+    }
+
+    /* ===== COUNTDOWN ===== */
+    .countdown-wrap {
+      text-align: center;
+    }
+    .countdown-label {
+      font-size: 0.6rem;
+      letter-spacing: 4px;
+      color: var(--cyan);
+      text-transform: uppercase;
+      opacity: 0.85;
+    }
+    .countdown-timer {
+      font-size: clamp(1.4rem, 3vw, 2rem);
+      font-weight: 900;
+      letter-spacing: 3px;
+      font-variant-numeric: tabular-nums;
+      color: var(--gold);
+      text-shadow: 0 0 18px var(--shadow-w);
+      line-height: 1.1;
+    }
+    .countdown-timer.urgent { color: var(--red); text-shadow: 0 0 18px var(--shadow-r); }
+    .countdown-timer.closed { color: #ff8844; text-shadow: none; font-size: 1rem; }
+
+    /* ===== PLAYER SECTION ===== */
+    .players-row {
+      display: flex;
+      gap: 14px;
+      flex: 1;
+      align-items: stretch;
+      min-height: 0;
+    }
+
+    .vs-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+      font-weight: 900;
+      color: var(--gold);
+      text-shadow: 0 0 20px var(--shadow-w);
+      min-width: 38px;
+      flex-shrink: 0;
+    }
+
+    /* ===== PLAYER CARD ===== */
+    .card {
+      flex: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      transition: border-color 0.5s, box-shadow 0.5s;
+      overflow: hidden;
+    }
+    /* Corner brackets */
+    .card::before {
+      content: '';
+      position: absolute; top: -1px; left: -1px;
+      width: 22px; height: 22px;
+      border-top: 2px solid var(--cyan);
+      border-left: 2px solid var(--cyan);
+      border-radius: 4px 0 0 0;
+    }
+    .card::after {
+      content: '';
+      position: absolute; bottom: -1px; right: -1px;
+      width: 22px; height: 22px;
+      border-bottom: 2px solid var(--cyan);
+      border-right: 2px solid var(--cyan);
+      border-radius: 0 0 4px 0;
+    }
+    .card.winning {
+      border-color: var(--gold);
+      box-shadow: 0 0 35px rgba(255,215,0,0.18), inset 0 0 35px rgba(255,215,0,0.05);
+    }
+    .card.winning::before, .card.winning::after { border-color: var(--gold); }
+    .card.losing {
+      border-color: rgba(255,56,56,0.25);
+      opacity: 0.82;
+    }
+
+    /* Card internal elements */
+    .card-status {
+      position: absolute;
+      top: 10px; left: 12px;
+      font-size: 0.58rem;
+      padding: 2px 8px;
+      border-radius: 3px;
+      border: 1px solid;
+      letter-spacing: 1px;
+    }
+    .status-open   { color: var(--green); border-color: var(--green); }
+    .status-closed { color: #ff8844;      border-color: #ff8844; }
+    .status-pre    { color: var(--cyan);  border-color: var(--cyan); }
+
+    .win-crown {
+      position: absolute;
+      top: 8px; right: 10px;
+      font-size: 0.6rem;
+      font-weight: bold;
+      background: var(--gold);
+      color: #000;
+      padding: 3px 8px;
+      border-radius: 3px;
+      letter-spacing: 1px;
+    }
+
+    .p-name {
+      font-size: clamp(0.9rem, 1.8vw, 1.25rem);
+      font-weight: bold;
+      color: var(--cyan);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .ticker-label {
+      font-size: 0.58rem;
+      letter-spacing: 3px;
+      color: rgba(200,216,232,0.45);
+      text-transform: uppercase;
+    }
+    .ticker-sym {
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      font-weight: 900;
+      color: #fff;
+      letter-spacing: 3px;
+      margin: 2px 0;
+      text-shadow: 0 0 20px rgba(255,255,255,0.15);
+    }
+    .arrow-icon {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      line-height: 1;
+      margin: 4px 0 2px;
+    }
+    .pct-change {
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      font-weight: 900;
+      margin: 2px 0;
+    }
+    .price-info {
+      font-size: clamp(0.75rem, 1.2vw, 1rem);
+      color: rgba(200,216,232,0.65);
+      margin-top: 4px;
+    }
+    .name-tag {
+      font-size: 0.65rem;
+      color: rgba(200,216,232,0.5);
+      margin-top: 2px;
+      letter-spacing: 1px;
+    }
+
+    /* Color helpers */
+    .up   { color: var(--green); text-shadow: 0 0 18px var(--shadow-g); }
+    .down { color: var(--red);   text-shadow: 0 0 18px var(--shadow-r); }
+    .flat { color: var(--text); }
+
+    /* ===== MARKET INDICES BAR ===== */
+    .market-bar {
+      background: rgba(0,0,0,0.55);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .indices {
+      display: flex;
+      gap: 22px;
+    }
+    .idx {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+    }
+    .idx-name {
+      font-size: 0.58rem;
+      letter-spacing: 1.5px;
+      color: var(--cyan);
+      text-transform: uppercase;
+    }
+    .idx-val {
+      font-size: 0.82rem;
+      font-weight: bold;
+    }
+    .idx-chg { font-size: 0.62rem; }
+
+    .bar-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    .refresh-txt {
+      font-size: 0.6rem;
+      color: rgba(200,216,232,0.45);
+    }
+    .admin-link {
+      font-size: 0.58rem;
+      color: rgba(200,216,232,0.2);
+      text-decoration: none;
+      letter-spacing: 1px;
+    }
+    .admin-link:hover { color: var(--cyan); }
+
+    /* Pulse animation for loading state */
+    .pulse { animation: blink 1.4s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+  </style>
+</head>
+<body>
+
+<!-- Scan line -->
+<div class="scan-line"></div>
+
+<!-- Circuit SVG overlay -->
+<svg class="circuit-overlay" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="cir" x="0" y="0" width="200" height="200" patternUnits="userSpaceOnUse">
+      <path d="M10 100 H80 V40 H160" stroke="#00d4ff" stroke-width="1" fill="none"/>
+      <path d="M190 100 H120 V160 H40"  stroke="#00d4ff" stroke-width="1" fill="none"/>
+      <circle cx="80"  cy="100" r="3" fill="#00d4ff"/>
+      <circle cx="120" cy="100" r="3" fill="#00d4ff"/>
+      <circle cx="80"  cy="40"  r="3" fill="#00d4ff"/>
+      <circle cx="160" cy="40"  r="3" fill="#00d4ff"/>
+      <circle cx="40"  cy="160" r="3" fill="#00d4ff"/>
+      <path d="M160 100 H190 V170 H100 V190" stroke="#ffd700" stroke-width="0.5" fill="none" opacity="0.4"/>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#cir)"/>
+</svg>
+
+<!-- ===== MAIN WRAPPER ===== -->
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <h1 id="challengeTitle">HEYKAY STOCK MARKET CHALLENGE</h1>
+    <div class="sub">⚡ REAL-TIME STOCK COMPETITION ⚡</div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="leaderboard">
+    <div class="lb-title">⚡ LEADERBOARD</div>
+    <div class="lb-row">
+      <span class="lb-name" id="lb-p1-name">HEYKAY</span>
+      <span class="lb-score" id="lb-p1-wins">0</span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-name" id="lb-p2-name">JUSTIN</span>
+      <span class="lb-score" id="lb-p2-wins">0</span>
+    </div>
+    <div class="lb-leader" id="lb-leader">— TIED —</div>
+  </div>
+
+  <!-- COUNTDOWN -->
+  <div class="countdown-wrap">
+    <div class="countdown-label" id="countdown-label">TIME UNTIL MARKET CLOSE</div>
+    <div class="countdown-timer" id="countdown">LOADING…</div>
+  </div>
+
+  <!-- PLAYER CARDS -->
+  <div class="players-row">
+
+    <!-- Player 1 -->
+    <div class="card" id="card-p1">
+      <div class="card-status status-open" id="p1-status">● OPEN</div>
+      <div class="p-name"  id="p1-name">HEYKAY</div>
+      <div class="ticker-label">TICKER</div>
+      <div class="ticker-sym" id="p1-ticker">---</div>
+      <div class="arrow-icon flat pulse" id="p1-arrow">◆</div>
+      <div class="pct-change flat pulse" id="p1-pct">--.-- %</div>
+      <div class="price-info" id="p1-price">$ ---.--</div>
+      <div class="name-tag" id="p1-compname"></div>
+    </div>
+
+    <div class="vs-badge">VS</div>
+
+    <!-- Player 2 -->
+    <div class="card" id="card-p2">
+      <div class="card-status status-open" id="p2-status">● OPEN</div>
+      <div class="p-name"  id="p2-name">JUSTIN</div>
+      <div class="ticker-label">TICKER</div>
+      <div class="ticker-sym" id="p2-ticker">---</div>
+      <div class="arrow-icon flat pulse" id="p2-arrow">◆</div>
+      <div class="pct-change flat pulse" id="p2-pct">--.-- %</div>
+      <div class="price-info" id="p2-price">$ ---.--</div>
+      <div class="name-tag" id="p2-compname"></div>
+    </div>
+
+  </div>
+
+  <!-- MARKET INDICES BAR -->
+  <div class="market-bar">
+    <div class="indices">
+      <div class="idx">
+        <div class="idx-name">DOW JONES</div>
+        <div class="idx-val flat" id="dow-val">---</div>
+        <div class="idx-chg flat" id="dow-chg">---</div>
+      </div>
+      <div class="idx">
+        <div class="idx-name">S&amp;P 500</div>
+        <div class="idx-val flat" id="sp-val">---</div>
+        <div class="idx-chg flat" id="sp-chg">---</div>
+      </div>
+      <div class="idx">
+        <div class="idx-name">NASDAQ</div>
+        <div class="idx-val flat" id="nq-val">---</div>
+        <div class="idx-chg flat" id="nq-chg">---</div>
+      </div>
+    </div>
+    <div class="bar-right">
+      <div class="refresh-txt" id="last-updated">Fetching data…</div>
+      <div class="refresh-txt" id="next-refresh">Refresh in 30s</div>
+      <a href="admin.html" class="admin-link">⚙ ADMIN</a>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- ===== JAVASCRIPT ===== -->
+<script>
+// ─── CONFIG ────────────────────────────────────────────────
+const DEFAULTS = {
+  title:      'HEYKAY STOCK MARKET CHALLENGE',
+  p1Name:     'HEYKAY',
+  p1Ticker:   'NVDA',
+  p2Name:     'JUSTIN',
+  p2Ticker:   'AAPL',
+  finnhubKey: '',
+  scores:     { p1: 0, p2: 0 },
+  lastScoreDate: ''
+};
+
+function loadCfg() {
+  try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('stockChallenge') || '{}') }; }
+  catch(e) { return { ...DEFAULTS }; }
+}
+function saveCfg(c) {
+  localStorage.setItem('stockChallenge', JSON.stringify(c));
+}
+
+let cfg = loadCfg();
+let refreshSecs = 30;
+let refreshInterval = null;
+let p1Pct = null, p2Pct = null;
+
+// ─── INIT UI ──────────────────────────────────────────────
+function initUI() {
+  document.getElementById('challengeTitle').textContent = cfg.title;
+  ['p1','p2'].forEach(p => {
+    const k = p === 'p1' ? 1 : 2;
+    document.getElementById(`p${k}-name`).textContent    = cfg[`${p}Name`];
+    document.getElementById(`lb-${p}-name`).textContent  = cfg[`${p}Name`];
+    document.getElementById(`p${k}-ticker`).textContent  = cfg[`${p}Ticker`] || '---';
+  });
+  renderLeaderboard();
+}
+
+// ─── STOCK DATA FETCHING ──────────────────────────────────
+async function fetchStock(sym) {
+  if (!sym || sym === '---') return null;
+
+  // 1) Try Finnhub (supports CORS natively)
+  if (cfg.finnhubKey) {
+    try {
+      const r = await fetch(
+        `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${cfg.finnhubKey}`,
+        { signal: AbortSignal.timeout(8000) }
+      );
+      if (r.ok) {
+        const d = await r.json();
+        if (d && d.c > 0) {
+          return { sym, price: d.c, change: d.d, pct: d.dp, prev: d.pc, state: 'REGULAR' };
+        }
+      }
+    } catch(e) { /* fall through */ }
+  }
+
+  // 2) Fallback: Yahoo Finance via corsproxy.io
+  const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(sym)}`;
+  for (const proxy of [
+    `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`,
+    `https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`
+  ]) {
+    try {
+      const r = await fetch(proxy, { signal: AbortSignal.timeout(10000) });
+      if (!r.ok) continue;
+      let body = await r.json();
+      // allorigins wraps in {contents: "..."}
+      if (body.contents) body = JSON.parse(body.contents);
+      const res = body?.quoteResponse?.result?.[0];
+      if (res?.regularMarketPrice) {
+        return {
+          sym,
+          price: res.regularMarketPrice,
+          change: res.regularMarketChange,
+          pct:   res.regularMarketChangePercent,
+          prev:  res.regularMarketPreviousClose,
+          state: res.marketState,
+          name:  res.shortName || ''
+        };
+      }
+    } catch(e) { /* try next proxy */ }
+  }
+  return null;
+}
+
+// ─── UPDATE CARD ─────────────────────────────────────────
+function colorClass(pct) {
+  if (pct === null || pct === undefined) return 'flat';
+  if (pct >  0.001) return 'up';
+  if (pct < -0.001) return 'down';
+  return 'flat';
+}
+
+function updateCard(n, data) {
+  const arrow   = document.getElementById(`p${n}-arrow`);
+  const pctEl   = document.getElementById(`p${n}-pct`);
+  const priceEl = document.getElementById(`p${n}-price`);
+  const nameEl  = document.getElementById(`p${n}-compname`);
+  const statEl  = document.getElementById(`p${n}-status`);
+
+  arrow.classList.remove('pulse');
+  pctEl.classList.remove('pulse');
+
+  if (!data) {
+    arrow.textContent = '?';  arrow.className = 'arrow-icon flat';
+    pctEl.textContent = 'NO DATA'; pctEl.className = 'pct-change flat';
+    priceEl.textContent = '$ ---.--';
+    return;
+  }
+
+  const pct   = data.pct   ?? 0;
+  const cls   = colorClass(pct);
+  const sign  = pct >= 0 ? '+' : '';
+
+  arrow.textContent = pct >= 0 ? '▲' : '▼';
+  arrow.className   = `arrow-icon ${cls}`;
+
+  pctEl.textContent = `${sign}${pct.toFixed(2)}%`;
+  pctEl.className   = `pct-change ${cls}`;
+
+  priceEl.textContent = `$${data.price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+  if (data.prev) priceEl.textContent += ` / prev $${data.prev.toFixed(2)}`;
+
+  if (nameEl) nameEl.textContent = data.name || '';
+
+  // Market state badge
+  const ms = (data.state || '').toUpperCase();
+  if (ms === 'REGULAR') {
+    statEl.textContent = '● OPEN'; statEl.className = 'card-status status-open';
+  } else if (ms === 'PRE') {
+    statEl.textContent = '◑ PRE-MARKET'; statEl.className = 'card-status status-pre';
+  } else if (ms === 'POST' || ms === 'POSTPOST') {
+    statEl.textContent = '◐ AFTER HRS'; statEl.className = 'card-status status-closed';
+  } else {
+    statEl.textContent = '● CLOSED'; statEl.className = 'card-status status-closed';
+  }
+}
+
+// ─── WINNING LOGIC ────────────────────────────────────────
+function applyWinner() {
+  const c1 = document.getElementById('card-p1');
+  const c2 = document.getElementById('card-p2');
+
+  // Remove old crowns
+  document.querySelectorAll('.win-crown').forEach(el => el.remove());
+
+  if (p1Pct === null || p2Pct === null) {
+    c1.className = 'card'; c2.className = 'card'; return;
+  }
+
+  if (p1Pct > p2Pct) {
+    c1.className = 'card winning'; c2.className = 'card losing';
+    const crown = document.createElement('div');
+    crown.className = 'win-crown'; crown.textContent = '👑 WINNING';
+    c1.appendChild(crown);
+  } else if (p2Pct > p1Pct) {
+    c2.className = 'card winning'; c1.className = 'card losing';
+    const crown = document.createElement('div');
+    crown.className = 'win-crown'; crown.textContent = '👑 WINNING';
+    c2.appendChild(crown);
+  } else {
+    c1.className = 'card'; c2.className = 'card';
+  }
+}
+
+// ─── DAILY SCORE TRACKING ─────────────────────────────────
+function checkDailyScore() {
+  if (p1Pct === null || p2Pct === null) return;
+  const today = new Date().toDateString();
+  // Only record winner once per day, after market close (simplistic check)
+  if (cfg.lastScoreDate === today) return;
+
+  const now = new Date();
+  // Check if it's past 4 PM ET
+  const etHour = getETHour(now);
+  if (etHour >= 16) {
+    cfg.lastScoreDate = today;
+    if      (p1Pct > p2Pct) { cfg.scores.p1 = (cfg.scores.p1 || 0) + 1; }
+    else if (p2Pct > p1Pct) { cfg.scores.p2 = (cfg.scores.p2 || 0) + 1; }
+    saveCfg(cfg);
+    renderLeaderboard();
+  }
+}
+
+function getETHour(date) {
+  // Approximate ET offset
+  const jan = new Date(date.getFullYear(),0,1).getTimezoneOffset();
+  const jul = new Date(date.getFullYear(),6,1).getTimezoneOffset();
+  const isDST = Math.min(jan,jul) === date.getTimezoneOffset();
+  const etOff = isDST ? -4 : -5;
+  const utcMs = date.getTime() + date.getTimezoneOffset() * 60000;
+  const etDate = new Date(utcMs + etOff * 3600000);
+  return etDate.getHours() + etDate.getMinutes()/60;
+}
+
+function renderLeaderboard() {
+  const s = cfg.scores || { p1:0, p2:0 };
+  document.getElementById('lb-p1-wins').textContent = s.p1 ?? 0;
+  document.getElementById('lb-p2-wins').textContent = s.p2 ?? 0;
+  const badge = document.getElementById('lb-leader');
+  if ((s.p1??0) > (s.p2??0)) {
+    badge.textContent = `👑 ${cfg.p1Name} LEADS`;
+    badge.style.color = 'var(--gold)';
+  } else if ((s.p2??0) > (s.p1??0)) {
+    badge.textContent = `👑 ${cfg.p2Name} LEADS`;
+    badge.style.color = 'var(--gold)';
+  } else {
+    badge.textContent = '🤝 TIED';
+    badge.style.color = 'var(--cyan)';
+  }
+}
+
+// ─── INDEX HELPER ─────────────────────────────────────────
+function updateIndex(prefix, data) {
+  const val = document.getElementById(`${prefix}-val`);
+  const chg = document.getElementById(`${prefix}-chg`);
+  if (!data) { val.textContent='---'; chg.textContent='---'; return; }
+  const pct  = data.pct ?? 0;
+  const cls  = colorClass(pct);
+  val.textContent = data.price.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  val.className   = `idx-val ${cls}`;
+  chg.textContent = `${pct>=0?'+':''}${pct.toFixed(2)}%`;
+  chg.className   = `idx-chg ${cls}`;
+}
+
+// ─── MAIN FETCH ───────────────────────────────────────────
+async function fetchAll() {
+  document.getElementById('next-refresh').textContent = 'Updating…';
+
+  const [d1, d2, dow, sp, nq] = await Promise.all([
+    fetchStock(cfg.p1Ticker),
+    fetchStock(cfg.p2Ticker),
+    fetchStock('^DJI'),
+    fetchStock('^GSPC'),
+    fetchStock('^IXIC')
+  ]);
+
+  p1Pct = d1?.pct ?? null;
+  p2Pct = d2?.pct ?? null;
+
+  updateCard(1, d1);
+  updateCard(2, d2);
+  applyWinner();
+  checkDailyScore();
+
+  updateIndex('dow', dow);
+  updateIndex('sp',  sp);
+  updateIndex('nq',  nq);
+
+  const t = new Date();
+  document.getElementById('last-updated').textContent =
+    `Updated: ${t.toLocaleTimeString()}`;
+  refreshSecs = 30;
+}
+
+// ─── REFRESH TIMER ────────────────────────────────────────
+function startTimer() {
+  if (refreshInterval) clearInterval(refreshInterval);
+  refreshInterval = setInterval(() => {
+    refreshSecs--;
+    document.getElementById('next-refresh').textContent =
+      refreshSecs > 0 ? `Refresh in ${refreshSecs}s` : 'Refreshing…';
+    if (refreshSecs <= 0) fetchAll();
+  }, 1000);
+}
+
+// ─── MARKET COUNTDOWN ─────────────────────────────────────
+function updateCountdown() {
+  const now = new Date();
+  const jan = new Date(now.getFullYear(),0,1).getTimezoneOffset();
+  const jul = new Date(now.getFullYear(),6,1).getTimezoneOffset();
+  const isDST = Math.min(jan,jul) === now.getTimezoneOffset();
+  const etOff = isDST ? -4 : -5;
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const et    = new Date(utcMs + etOff * 3600000);
+
+  const day  = et.getDay();
+  const h    = et.getHours();
+  const m    = et.getMinutes();
+  const s    = et.getSeconds();
+  const mins = h * 60 + m;
+
+  const timerEl = document.getElementById('countdown');
+  const labelEl = document.getElementById('countdown-label');
+
+  if (day === 0 || day === 6) {
+    timerEl.textContent = 'WEEKEND';
+    timerEl.className = 'countdown-timer closed';
+    labelEl.textContent = 'MARKET CLOSED — WEEKEND';
+    return;
+  }
+
+  const OPEN  = 9*60+30;
+  const CLOSE = 16*60;
+
+  if (mins < OPEN) {
+    const rem = (OPEN - mins)*60 - s;
+    const hh = Math.floor(rem/3600), mm = Math.floor((rem%3600)/60), ss = rem%60;
+    labelEl.textContent = 'TIME UNTIL MARKET OPEN';
+    timerEl.textContent = `${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    timerEl.className   = 'countdown-timer';
+  } else if (mins >= CLOSE) {
+    timerEl.textContent = 'MARKET CLOSED';
+    timerEl.className   = 'countdown-timer closed';
+    labelEl.textContent = 'NYSE MARKET HOURS: 9:30AM – 4:00PM ET';
+  } else {
+    const rem = (CLOSE - mins)*60 - s;
+    const hh = Math.floor(rem/3600), mm = Math.floor((rem%3600)/60), ss = rem%60;
+    labelEl.textContent = 'TIME UNTIL MARKET CLOSE';
+    timerEl.textContent = `${hh}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    timerEl.className   = rem < 3600 ? 'countdown-timer urgent' : 'countdown-timer';
+  }
+}
+
+// ─── KICK OFF ─────────────────────────────────────────────
+initUI();
+fetchAll();
+startTimer();
+setInterval(updateCountdown, 1000);
+updateCountdown();
+</script>
+</body>
+</html>

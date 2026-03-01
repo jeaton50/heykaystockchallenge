@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Stock Challenge</title>
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    :root {
+      --bg:      #070d1a;
+      --bg-card: rgba(6,16,38,0.97);
+      --cyan:    #00d4ff;
+      --gold:    #ffd700;
+      --green:   #00ff88;
+      --red:     #ff3838;
+      --text:    #c8d8e8;
+      --border:  rgba(0,212,255,0.22);
+    }
+
+    body {
+      font-family: 'Courier New', 'Lucida Console', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    body::before {
+      content:'';
+      position: fixed; inset:0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ===== LOGIN OVERLAY ===== */
+    #login-screen {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #login-screen::before {
+      content:'';
+      position: fixed; inset:0;
+      background-image:
+        linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+    }
+
+    .login-box {
+      position: relative;
+      z-index: 1;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px 44px;
+      text-align: center;
+      min-width: 320px;
+    }
+    .login-box::before {
+      content:'';
+      position: absolute; top:-1px; left:-1px;
+      width:24px; height:24px;
+      border-top: 2px solid var(--cyan);
+      border-left: 2px solid var(--cyan);
+    }
+    .login-box::after {
+      content:'';
+      position: absolute; bottom:-1px; right:-1px;
+      width:24px; height:24px;
+      border-bottom: 2px solid var(--cyan);
+      border-right: 2px solid var(--cyan);
+    }
+
+    .login-title {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--gold);
+      letter-spacing: 4px;
+      text-shadow: 0 0 20px rgba(255,215,0,0.6);
+      margin-bottom: 6px;
+    }
+    .login-sub {
+      font-size: 0.62rem;
+      color: var(--cyan);
+      letter-spacing: 3px;
+      margin-bottom: 24px;
+    }
+
+    .login-input {
+      width: 100%;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 10px 14px;
+      outline: none;
+      margin-bottom: 14px;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+    .login-input:focus { border-color: var(--cyan); }
+
+    .login-error {
+      color: var(--red);
+      font-size: 0.72rem;
+      min-height: 18px;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+
+    .btn {
+      background: transparent;
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      padding: 9px 22px;
+      border-radius: 5px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: rgba(0,212,255,0.12); }
+
+    .btn-gold {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+    .btn-gold:hover { background: rgba(255,215,0,0.1); }
+
+    .btn-red {
+      border-color: var(--red);
+      color: var(--red);
+    }
+    .btn-red:hover { background: rgba(255,56,56,0.1); }
+
+    .btn-green {
+      border-color: var(--green);
+      color: var(--green);
+    }
+    .btn-green:hover { background: rgba(0,255,136,0.1); }
+
+    /* ===== ADMIN PANEL ===== */
+    #admin-panel {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 680px;
+      padding: 20px 18px;
+    }
+
+    .admin-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .admin-header h1 {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: var(--gold);
+      letter-spacing: 4px;
+      text-shadow: 0 0 18px rgba(255,215,0,0.55);
+    }
+    .admin-header .sub {
+      font-size: 0.6rem;
+      color: var(--cyan);
+      letter-spacing: 4px;
+      margin-top: 2px;
+    }
+
+    .section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-bottom: 14px;
+      position: relative;
+    }
+    .section::before {
+      content:'';
+      position: absolute; top:-1px; left:-1px;
+      width:16px; height:16px;
+      border-top: 2px solid var(--cyan);
+      border-left: 2px solid var(--cyan);
+    }
+
+    .section-title {
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      color: var(--cyan);
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+    }
+
+    .field-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+    .field-row label {
+      font-size: 0.72rem;
+      color: rgba(200,216,232,0.65);
+      letter-spacing: 1px;
+      min-width: 90px;
+      text-transform: uppercase;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      flex: 1;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 8px 12px;
+      outline: none;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    input[type="text"]:focus,
+    input[type="password"]:focus { border-color: var(--cyan); }
+    input[type="text"].notransform { text-transform: none; }
+
+    .score-display {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .score-box {
+      background: rgba(0,0,0,0.35);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 16px;
+      text-align: center;
+      flex: 1;
+      min-width: 100px;
+    }
+    .score-box .sname {
+      font-size: 0.62rem;
+      color: var(--cyan);
+      letter-spacing: 2px;
+    }
+    .score-box .sval {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: var(--green);
+      text-shadow: 0 0 10px rgba(0,255,136,0.4);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .save-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .save-msg {
+      font-size: 0.7rem;
+      min-height: 20px;
+      letter-spacing: 1px;
+    }
+    .save-msg.ok  { color: var(--green); }
+    .save-msg.err { color: var(--red); }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      color: rgba(200,216,232,0.35);
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-decoration: none;
+      margin-top: 4px;
+    }
+    .back-link:hover { color: var(--cyan); }
+
+    .key-hint {
+      font-size: 0.6rem;
+      color: rgba(200,216,232,0.35);
+      margin-top: 6px;
+      letter-spacing: 1px;
+    }
+
+    .divider { border:none; border-top:1px solid var(--border); margin: 12px 0; }
+
+    .inline-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: rgba(200,216,232,0.5);
+      font-family: inherit;
+      font-size: 0.72rem;
+      padding: 7px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      letter-spacing: 1px;
+    }
+    .inline-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    .pw-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .pw-row input { flex:1; }
+
+    #pw-hint {
+      font-size: 0.65rem;
+      color: rgba(200,216,232,0.4);
+      margin-top: 4px;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-title">⚙ ADMIN</div>
+    <div class="login-sub">STOCK CHALLENGE CONTROL PANEL</div>
+    <input
+      type="password"
+      id="pw-input"
+      class="login-input"
+      placeholder="Enter password"
+      autocomplete="current-password"
+    />
+    <div class="login-error" id="login-err"></div>
+    <button class="btn btn-gold" onclick="checkPassword()">ENTER</button>
+    <p style="font-size:0.6rem;color:rgba(200,216,232,0.3);margin-top:16px;letter-spacing:1px;">
+      Default password: <strong style="color:var(--cyan)">heykay</strong>
+    </p>
+  </div>
+</div>
+
+<!-- ===== ADMIN PANEL ===== -->
+<div id="admin-panel" style="display:none">
+
+  <div class="admin-header">
+    <h1>⚙ ADMIN PANEL</h1>
+    <div class="sub">STOCK CHALLENGE CONFIGURATION</div>
+  </div>
+
+  <!-- CHALLENGE TITLE -->
+  <div class="section">
+    <div class="section-title">🏆 Challenge Title</div>
+    <div class="field-row">
+      <label>Title</label>
+      <input type="text" id="cfg-title" class="notransform" value="" placeholder="HEYKAY STOCK MARKET CHALLENGE" />
+    </div>
+  </div>
+
+  <!-- PLAYER 1 -->
+  <div class="section">
+    <div class="section-title">👤 Player 1</div>
+    <div class="field-row">
+      <label>Name</label>
+      <input type="text" id="cfg-p1name" value="" placeholder="HEYKAY" />
+    </div>
+    <div class="field-row">
+      <label>Ticker</label>
+      <input type="text" id="cfg-p1ticker" value="" placeholder="NVDA" />
+    </div>
+  </div>
+
+  <!-- PLAYER 2 -->
+  <div class="section">
+    <div class="section-title">👤 Player 2</div>
+    <div class="field-row">
+      <label>Name</label>
+      <input type="text" id="cfg-p2name" value="" placeholder="JUSTIN" />
+    </div>
+    <div class="field-row">
+      <label>Ticker</label>
+      <input type="text" id="cfg-p2ticker" value="" placeholder="AAPL" />
+    </div>
+  </div>
+
+  <!-- API KEY -->
+  <div class="section">
+    <div class="section-title">🔑 Finnhub API Key (Recommended)</div>
+    <div class="field-row">
+      <label>API Key</label>
+      <div class="pw-row" style="flex:1">
+        <input type="password" id="cfg-apikey" class="notransform" placeholder="Paste Finnhub key here…" />
+        <button class="inline-btn" onclick="toggleApiKey()">SHOW</button>
+      </div>
+    </div>
+    <div class="key-hint">
+      Free key at <strong style="color:var(--cyan)">finnhub.io</strong> →
+      Gives you real-time US stock data. Without a key the app uses Yahoo Finance
+      via a public CORS proxy (may be slower / rate-limited).
+    </div>
+    <button class="inline-btn" onclick="testApiKey()" style="margin-top:10px">TEST KEY</button>
+    <span id="api-test-result" style="font-size:0.7rem;margin-left:10px;letter-spacing:1px;"></span>
+  </div>
+
+  <!-- LEADERBOARD / SCORES -->
+  <div class="section">
+    <div class="section-title">⚡ Leaderboard Scores</div>
+    <div class="score-display" id="score-display">
+      <!-- Populated by JS -->
+    </div>
+    <div class="btn-row" style="margin-top:12px">
+      <button class="btn btn-green" onclick="addWin(1)">+1 Win — Player 1</button>
+      <button class="btn btn-green" onclick="addWin(2)">+1 Win — Player 2</button>
+      <button class="btn btn-red"   onclick="resetScores()">Reset Scores</button>
+    </div>
+  </div>
+
+  <!-- CHANGE PASSWORD -->
+  <div class="section">
+    <div class="section-title">🔒 Change Admin Password</div>
+    <div class="field-row">
+      <label>New Pass</label>
+      <input type="password" id="new-pw" placeholder="New password…" class="notransform" />
+    </div>
+    <div class="field-row">
+      <label>Confirm</label>
+      <input type="password" id="confirm-pw" placeholder="Confirm password…" class="notransform" />
+    </div>
+    <div id="pw-hint"></div>
+    <button class="btn" onclick="changePassword()" style="margin-top:10px">UPDATE PASSWORD</button>
+  </div>
+
+  <!-- SAVE BAR -->
+  <div class="section">
+    <div class="save-bar">
+      <div class="save-msg" id="save-msg"></div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-gold" onclick="saveAll()">💾 SAVE SETTINGS</button>
+        <button class="btn" onclick="logout()">LOGOUT</button>
+      </div>
+    </div>
+  </div>
+
+  <a href="index.html" class="back-link">← BACK TO CHALLENGE</a>
+
+</div><!-- /admin-panel -->
+
+<!-- ===== SCRIPT ===== -->
+<script>
+// ─── PASSWORD HASHING (SHA-256 via SubtleCrypto) ──────────
+const DEFAULT_PASS = 'heykay';
+const PASS_KEY     = 'stockChallenge_adminHash';
+
+async function sha256(str) {
+  const buf  = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// Ensure a default password hash exists
+(async () => {
+  if (!localStorage.getItem(PASS_KEY)) {
+    localStorage.setItem(PASS_KEY, await sha256(DEFAULT_PASS));
+  }
+})();
+
+async function checkPassword() {
+  const val  = document.getElementById('pw-input').value;
+  const hash = await sha256(val);
+  const stored = localStorage.getItem(PASS_KEY);
+  if (hash === stored) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-panel').style.display  = 'block';
+    loadForm();
+  } else {
+    document.getElementById('login-err').textContent = '✗ Incorrect password';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+// Enter key on password input
+document.getElementById('pw-input').addEventListener('keyup', e => {
+  if (e.key === 'Enter') checkPassword();
+});
+
+function logout() {
+  document.getElementById('admin-panel').style.display  = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pw-input').value = '';
+  document.getElementById('login-err').textContent = '';
+}
+
+// ─── CONFIG ───────────────────────────────────────────────
+const DEFAULTS = {
+  title:      'HEYKAY STOCK MARKET CHALLENGE',
+  p1Name:     'HEYKAY',
+  p1Ticker:   'NVDA',
+  p2Name:     'JUSTIN',
+  p2Ticker:   'AAPL',
+  finnhubKey: '',
+  scores:     { p1:0, p2:0 },
+  lastScoreDate: ''
+};
+
+function loadCfg() {
+  try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem('stockChallenge') || '{}') }; }
+  catch(e) { return { ...DEFAULTS }; }
+}
+function saveCfg(c) {
+  localStorage.setItem('stockChallenge', JSON.stringify(c));
+}
+
+let cfg = loadCfg();
+
+function loadForm() {
+  cfg = loadCfg();
+  document.getElementById('cfg-title').value    = cfg.title     || DEFAULTS.title;
+  document.getElementById('cfg-p1name').value   = cfg.p1Name   || '';
+  document.getElementById('cfg-p1ticker').value = cfg.p1Ticker || '';
+  document.getElementById('cfg-p2name').value   = cfg.p2Name   || '';
+  document.getElementById('cfg-p2ticker').value = cfg.p2Ticker || '';
+  document.getElementById('cfg-apikey').value   = cfg.finnhubKey || '';
+  renderScores();
+}
+
+function renderScores() {
+  const s = cfg.scores || { p1:0, p2:0 };
+  document.getElementById('score-display').innerHTML = `
+    <div class="score-box">
+      <div class="sname">${cfg.p1Name || 'PLAYER 1'}</div>
+      <div class="sval">${s.p1 ?? 0}</div>
+    </div>
+    <div style="font-size:1.2rem;font-weight:bold;color:var(--gold);align-self:center;">VS</div>
+    <div class="score-box">
+      <div class="sname">${cfg.p2Name || 'PLAYER 2'}</div>
+      <div class="sval">${s.p2 ?? 0}</div>
+    </div>
+  `;
+}
+
+function addWin(player) {
+  cfg = loadCfg();
+  if (!cfg.scores) cfg.scores = { p1:0, p2:0 };
+  if (player === 1) cfg.scores.p1 = (cfg.scores.p1 || 0) + 1;
+  else              cfg.scores.p2 = (cfg.scores.p2 || 0) + 1;
+  saveCfg(cfg);
+  renderScores();
+  showMsg('Win recorded! ✓', 'ok');
+}
+
+function resetScores() {
+  if (!confirm('Reset all scores to 0?')) return;
+  cfg = loadCfg();
+  cfg.scores = { p1:0, p2:0 };
+  cfg.lastScoreDate = '';
+  saveCfg(cfg);
+  renderScores();
+  showMsg('Scores reset.', 'ok');
+}
+
+// ─── SAVE ─────────────────────────────────────────────────
+function saveAll() {
+  cfg = loadCfg();
+
+  const title    = document.getElementById('cfg-title').value.trim();
+  const p1Name   = document.getElementById('cfg-p1name').value.trim().toUpperCase();
+  const p1Ticker = document.getElementById('cfg-p1ticker').value.trim().toUpperCase().replace(/[^A-Z0-9.^-]/g,'');
+  const p2Name   = document.getElementById('cfg-p2name').value.trim().toUpperCase();
+  const p2Ticker = document.getElementById('cfg-p2ticker').value.trim().toUpperCase().replace(/[^A-Z0-9.^-]/g,'');
+  const apiKey   = document.getElementById('cfg-apikey').value.trim();
+
+  if (!p1Ticker || !p2Ticker) {
+    showMsg('⚠ Both ticker symbols are required.', 'err'); return;
+  }
+  if (!p1Name || !p2Name) {
+    showMsg('⚠ Both player names are required.', 'err'); return;
+  }
+
+  cfg.title      = title      || DEFAULTS.title;
+  cfg.p1Name     = p1Name;
+  cfg.p1Ticker   = p1Ticker;
+  cfg.p2Name     = p2Name;
+  cfg.p2Ticker   = p2Ticker;
+  cfg.finnhubKey = apiKey;
+
+  saveCfg(cfg);
+  renderScores();
+  showMsg('✓ Settings saved! Reload the main page to apply.', 'ok');
+}
+
+// ─── CHANGE PASSWORD ──────────────────────────────────────
+async function changePassword() {
+  const pw1 = document.getElementById('new-pw').value;
+  const pw2 = document.getElementById('confirm-pw').value;
+  const hint = document.getElementById('pw-hint');
+
+  if (!pw1 || pw1.length < 4) {
+    hint.textContent = '⚠ Password must be at least 4 characters.';
+    hint.style.color = 'var(--red)'; return;
+  }
+  if (pw1 !== pw2) {
+    hint.textContent = '⚠ Passwords do not match.';
+    hint.style.color = 'var(--red)'; return;
+  }
+  const hash = await sha256(pw1);
+  localStorage.setItem(PASS_KEY, hash);
+  hint.textContent = '✓ Password updated!';
+  hint.style.color = 'var(--green)';
+  document.getElementById('new-pw').value     = '';
+  document.getElementById('confirm-pw').value = '';
+}
+
+// ─── API KEY HELPERS ──────────────────────────────────────
+function toggleApiKey() {
+  const inp = document.getElementById('cfg-apikey');
+  const btn = inp.nextElementSibling;
+  if (inp.type === 'password') { inp.type = 'text'; btn.textContent = 'HIDE'; }
+  else                         { inp.type = 'password'; btn.textContent = 'SHOW'; }
+}
+
+async function testApiKey() {
+  const key = document.getElementById('cfg-apikey').value.trim();
+  const el  = document.getElementById('api-test-result');
+  if (!key) { el.textContent = '⚠ Enter an API key first.'; el.style.color='var(--red)'; return; }
+  el.textContent = 'Testing…'; el.style.color = 'var(--text)';
+  try {
+    const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=AAPL&token=${key}`,
+      { signal: AbortSignal.timeout(8000) });
+    const d = await r.json();
+    if (d && d.c > 0) {
+      el.textContent = `✓ Valid! AAPL = $${d.c.toFixed(2)}`;
+      el.style.color = 'var(--green)';
+    } else {
+      el.textContent = '✗ Key invalid or no data returned.';
+      el.style.color = 'var(--red)';
+    }
+  } catch(e) {
+    el.textContent = `✗ Error: ${e.message}`;
+    el.style.color = 'var(--red)';
+  }
+}
+
+// ─── UTIL ─────────────────────────────────────────────────
+function showMsg(msg, type) {
+  const el = document.getElementById('save-msg');
+  el.textContent = msg;
+  el.className   = `save-msg ${type}`;
+  setTimeout(() => { el.textContent = ''; el.className = 'save-msg'; }, 5000);
+}
+</script>
+</body>
+</html>
